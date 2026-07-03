@@ -132,17 +132,24 @@ export function DeliveryForm({
           toast.error(`CEP fora de ${ALLOWED_CITY}-${ALLOWED_UF}`);
           return;
         }
-        // Sobrescreve endereço/bairro/cidade com os valores oficiais do CEP.
-        // Campos vazios da API não apagam o que já existe.
-        setV((p) => ({
-          ...p,
-          endereco: d.logradouro?.trim() ? d.logradouro : p.endereco,
-          bairro: d.bairro?.trim() ? d.bairro : p.bairro,
-          cidade: d.localidade?.trim()
-            ? `${d.localidade}${d.uf ? "/" + d.uf : ""}`
-            : p.cidade,
-        }));
-        if (!r.fromCache) toast.success("Endereço preenchido pelo CEP");
+        // Auto-preenche apenas os campos ainda vazios — o que o usuário já
+        // digitou manualmente é preservado (fallback editável).
+        setV((p) => {
+          const filled: Partial<DeliveryFormValues> = {};
+          if (!p.endereco.trim() && d.logradouro?.trim()) filled.endereco = d.logradouro;
+          if (!p.bairro.trim() && d.bairro?.trim()) filled.bairro = d.bairro;
+          if (!p.cidade.trim() && d.localidade?.trim()) {
+            filled.cidade = `${d.localidade}${d.uf ? "/" + d.uf : ""}`;
+          }
+          return { ...p, ...filled };
+        });
+        if (!r.fromCache) {
+          const kept =
+            v.endereco.trim() || v.bairro.trim() || v.cidade.trim()
+              ? " (mantivemos o que você editou)"
+              : "";
+          toast.success(`Endereço preenchido pelo CEP${kept}`);
+        }
       })
       .finally(() => {
         if (!ctrl.signal.aborted) setCepLoading(false);
