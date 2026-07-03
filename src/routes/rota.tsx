@@ -320,6 +320,39 @@ function RotaPage() {
     window.open(url, "_blank", "noopener");
   };
 
+  // Abre um mapa do Google com as paradas candidatas (antes do cálculo da rota),
+  // usado como fallback quando o mapa embutido não pode ser exibido.
+  const openPreviewInGoogleMaps = () => {
+    if (!origin) {
+      toast.error("Aguarde a localização");
+      return;
+    }
+    if (candidates.length === 0) {
+      toast.error("Nenhuma entrega para exibir");
+      return;
+    }
+    const pts = candidates
+      .map((d) => {
+        if (d.lat != null && d.lng != null) return `${d.lat},${d.lng}`;
+        return [
+          `${d.endereco}${d.numero ? ", " + d.numero : ""}`,
+          d.bairro,
+          d.cidade,
+        ]
+          .filter(Boolean)
+          .join(", ");
+      })
+      .map(encodeURIComponent);
+    const dest = pts[pts.length - 1];
+    const waypoints = pts.slice(0, -1).join("|");
+    const url =
+      `https://www.google.com/maps/dir/?api=1&travelmode=driving` +
+      `&origin=${origin.lat},${origin.lng}` +
+      `&destination=${dest}` +
+      (waypoints ? `&waypoints=${waypoints}` : "");
+    window.open(url, "_blank", "noopener");
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="sticky top-0 z-20 bg-primary text-primary-foreground px-4 pt-6 pb-4 shadow-elevated flex items-center gap-3">
@@ -340,13 +373,26 @@ function RotaPage() {
 
       <div className="mx-auto w-full max-w-xl px-4 pt-4 space-y-3">
         {mapUnavailable ? (
-          <div className="w-full rounded-2xl border border-border bg-muted/50 p-4 text-sm text-muted-foreground flex items-start gap-3">
-            <MapPin className="w-5 h-5 mt-0.5 shrink-0" />
-            <p>
-              Mapa indisponível neste domínio, mas o cálculo da rota funciona
-              normalmente — use a lista abaixo e o botão <strong>Iniciar</strong>{" "}
-              para abrir a navegação no Google Maps.
-            </p>
+          <div className="w-full rounded-2xl border border-border bg-muted/50 p-4 text-sm text-muted-foreground flex flex-col gap-3">
+            <div className="flex items-start gap-3">
+              <MapPin className="w-5 h-5 mt-0.5 shrink-0" />
+              <p>
+                Mapa indisponível neste domínio, mas o cálculo da rota funciona
+                normalmente — abra o Google Maps em uma nova aba para visualizar
+                as paradas.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={
+                result && origin ? startNavigation : openPreviewInGoogleMaps
+              }
+              disabled={!origin || candidates.length === 0}
+              className="w-full h-10 rounded-xl"
+            >
+              <Navigation className="w-4 h-4" />
+              {result ? "Abrir rota no Google Maps" : "Abrir paradas no Google Maps"}
+            </Button>
           </div>
         ) : (
           <div
