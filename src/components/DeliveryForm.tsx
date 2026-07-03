@@ -466,10 +466,22 @@ export function DeliveryForm({
         <Label htmlFor="observacoes">Observações</Label>
         <Textarea id="observacoes" value={v.observacoes} onChange={(e) => set("observacoes", e.target.value)} rows={2} maxLength={500} />
       </div>
-      <div className="flex gap-2 pt-2">
-        <Button type="button" variant="outline" className="flex-1 h-12" onClick={onCancel}>Cancelar</Button>
-        <Button type="submit" className="flex-1 h-12">Salvar</Button>
-      </div>
+      {(() => {
+        const digits = normalizeCep(v.cep);
+        const hasGps = v.lat != null && v.lng != null;
+        const cepOk = digits.length === 0 ? hasGps : isValidCep(digits);
+        const blocked = !cepOk || !!cepError;
+        return (
+          <div className="flex gap-2 pt-2">
+            <Button type="button" variant="outline" className="flex-1 h-12" onClick={onCancel}>
+              Cancelar
+            </Button>
+            <Button type="submit" className="flex-1 h-12" disabled={blocked}>
+              Salvar
+            </Button>
+          </div>
+        );
+      })()}
     </form>
   );
 }
