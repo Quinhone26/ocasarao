@@ -292,6 +292,41 @@ export function DeliveryForm({
           <Input id="complemento" value={v.complemento} onChange={(e) => set("complemento", e.target.value)} maxLength={100} />
         </div>
       </div>
+      <div className="space-y-2 rounded-lg border border-border p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-medium">Localização do destino (GPS)</p>
+            <p className="text-xs text-muted-foreground">
+              {v.lat != null && v.lng != null
+                ? `Salvo: ${v.lat.toFixed(5)}, ${v.lng.toFixed(5)}`
+                : "Opcional. Se salvo, o app confirma a entrega quando você chegar (~50 m)."}
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-1">
+            {v.lat != null && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setV((p) => ({ ...p, lat: null, lng: null }))}
+              >
+                Limpar
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={captureLocation}
+              disabled={geoBusy}
+              className="gap-1.5"
+            >
+              {geoBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+              Usar minha localização
+            </Button>
+          </div>
+        </div>
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="dataHora">Data e hora</Label>
