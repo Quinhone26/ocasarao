@@ -21,6 +21,13 @@ export interface DeliveryFormValues {
   status: DeliveryStatus;
 }
 
+function toLocalInput(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 const empty: DeliveryFormValues = {
   cliente: "",
   telefone: "",
@@ -31,7 +38,7 @@ const empty: DeliveryFormValues = {
   complemento: "",
   observacoes: "",
   valor: 0,
-  dataHora: new Date().toISOString().slice(0, 16),
+  dataHora: "",
   status: "pendente",
 };
 
@@ -58,11 +65,11 @@ export function DeliveryForm({
         complemento: initial.complemento,
         observacoes: initial.observacoes,
         valor: initial.valor,
-        dataHora: initial.dataHora.slice(0, 16),
+        dataHora: toLocalInput(initial.dataHora),
         status: initial.status,
       });
     } else {
-      setV({ ...empty, dataHora: new Date().toISOString().slice(0, 16) });
+      setV({ ...empty, dataHora: toLocalInput(new Date().toISOString()) });
     }
   }, [initial]);
 
