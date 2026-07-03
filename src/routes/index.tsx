@@ -12,6 +12,7 @@ import { DeliveryForm, type DeliveryFormValues } from "@/components/DeliveryForm
 import type { Delivery, DeliveryStatus } from "@/lib/deliveries";
 import { useDeliveries, buildMapsUrl, formatBRL, statusLabel, distanceMeters } from "@/lib/deliveries";
 import { cn } from "@/lib/utils";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -302,6 +303,8 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-background pb-36">
+      <InstallPrompt />
+
       {!online && (
         <div
           role="status"
