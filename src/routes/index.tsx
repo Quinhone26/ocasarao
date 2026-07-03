@@ -292,6 +292,25 @@ function Index() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Arrival confirm — mostrado ao voltar do Maps */}
+      <AlertDialog open={!!arrivalTarget} onOpenChange={(o) => { if (!o) setArrivalPromptId(undefined); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Chegou no destino?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Confirmar entrega de <strong>{arrivalTarget?.cliente}</strong>
+              {arrivalTarget?.endereco ? <> em {arrivalTarget.endereco}{arrivalTarget.numero ? `, ${arrivalTarget.numero}` : ""}</> : null}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Ainda não</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmArrival} className="bg-status-delivered text-status-delivered-foreground hover:bg-status-delivered/90">
+              Confirmar entrega
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
