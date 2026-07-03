@@ -1,13 +1,34 @@
 /// <reference types="google.maps" />
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Route as RouteIcon, Navigation, Loader2, MapPin } from "lucide-react";
+import { ArrowLeft, Route as RouteIcon, Navigation, Loader2, MapPin, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useDeliveries } from "@/lib/deliveries";
 import type { Delivery } from "@/lib/deliveries";
 import { optimizeRoute } from "@/lib/routes.functions";
 import { loadGoogleMaps, decodePolyline } from "@/lib/gmaps";
+
+function buildNavUrl(
+  origin: { lat: number; lng: number },
+  d: Delivery,
+) {
+  const dest =
+    d.lat != null && d.lng != null
+      ? `${d.lat},${d.lng}`
+      : [
+          `${d.endereco}${d.numero ? ", " + d.numero : ""}`,
+          d.bairro,
+          d.cidade,
+        ]
+          .filter(Boolean)
+          .join(", ");
+  return (
+    `https://www.google.com/maps/dir/?api=1&travelmode=driving` +
+    `&origin=${origin.lat},${origin.lng}` +
+    `&destination=${encodeURIComponent(dest)}`
+  );
+}
 
 export const Route = createFileRoute("/rota")({
   component: RotaPage,
@@ -37,7 +58,7 @@ function fmtKm(m: number) {
 }
 
 function RotaPage() {
-  const { items } = useDeliveries();
+  const { items, update } = useDeliveries();
   const [origin, setOrigin] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [computing, setComputing] = useState(false);
@@ -61,6 +82,19 @@ function RotaPage() {
       ),
     [items],
   );
+
+  // Paradas ainda ativas (remove entregues/canceladas do plano visível).
+  const visibleStops = useMemo(() => {
+    if (!result) return [];
+    const active = new Set(
+      items
+        .filter((d) => d.status === "pendente" || d.status === "em_rota")
+        .map((d) => d.id),
+    );
+    return result.stops
+      .filter((s) => active.has(s.delivery.id))
+      .map((s, i) => ({ ...s, order: i + 1 }));
+  }, [result, items]);
 
   const getLocation = () => {
     if (!("geolocation" in navigator)) {
@@ -171,7 +205,7 @@ function RotaPage() {
         const bounds = new g.maps.LatLngBounds();
         bounds.extend(origin);
 
-        const list = result?.stops.map((s) => s.delivery) ?? candidates;
+        const list = result ? visibleStops.map((s) => s.delivery) : candidates;
         list.forEach((d, i) => {
           if (d.lat == null || d.lng == null) return;
           const pos = { lat: d.lat, lng: d.lng };
@@ -217,12 +251,31 @@ function RotaPage() {
     return () => {
       cancelled = true;
     };
-  }, [origin, candidates, result]);
+  }, [origin, candidates, result, visibleStops]);
+
+
+  const markDelivered = async (d: Delivery) => {
+    try {
+      await update(d.id, { status: "entregue" });
+      toast.success(`${d.cliente} marcada como entregue`);
+      // Próxima parada ativa após esta.
+      const remaining = visibleStops.filter((s) => s.delivery.id !== d.id);
+      const next = remaining[0];
+      if (next && origin) {
+        window.open(buildNavUrl(origin, next.delivery), "_blank", "noopener");
+      } else if (!next) {
+        toast.success("Todas as entregas concluídas 🎉");
+      }
+    } catch {
+      toast.error("Falha ao marcar entrega");
+    }
+  };
 
   // Abre navegação no Google Maps já com todas as paradas em ordem.
   const startNavigation = () => {
     if (!result || !origin) return;
-    const waypoints = result.stops
+    const stops = visibleStops.length > 0 ? visibleStops : result.stops;
+    const waypoints = stops
       .slice(0, -1)
       .map((s) => {
         const d = s.delivery;
@@ -237,17 +290,17 @@ function RotaPage() {
       })
       .map(encodeURIComponent)
       .join("|");
-    const dest = (() => {
-      const d = result.stops[result.stops.length - 1].delivery;
-      if (d.lat != null && d.lng != null) return `${d.lat},${d.lng}`;
-      return [
-        `${d.endereco}${d.numero ? ", " + d.numero : ""}`,
-        d.bairro,
-        d.cidade,
-      ]
-        .filter(Boolean)
-        .join(", ");
-    })();
+    const last = stops[stops.length - 1].delivery;
+    const dest =
+      last.lat != null && last.lng != null
+        ? `${last.lat},${last.lng}`
+        : [
+            `${last.endereco}${last.numero ? ", " + last.numero : ""}`,
+            last.bairro,
+            last.cidade,
+          ]
+            .filter(Boolean)
+            .join(", ");
     const url =
       `https://www.google.com/maps/dir/?api=1&travelmode=driving` +
       `&origin=${origin.lat},${origin.lng}` +
@@ -330,7 +383,12 @@ function RotaPage() {
             </div>
 
             <ol className="space-y-2 pb-8">
-              {result.stops.map((s) => (
+              {visibleStops.length === 0 && (
+                <li className="text-center text-sm text-muted-foreground py-6">
+                  Todas as paradas foram concluídas.
+                </li>
+              )}
+              {visibleStops.map((s, i) => (
                 <li
                   key={s.delivery.id}
                   className="flex items-start gap-3 rounded-xl bg-card border border-border p-3"
@@ -349,6 +407,15 @@ function RotaPage() {
                         .join(" · ")}
                     </p>
                   </div>
+                  <Button
+                    size="sm"
+                    onClick={() => markDelivered(s.delivery)}
+                    className="h-9 rounded-lg bg-status-delivered text-status-delivered-foreground hover:bg-status-delivered/90 shrink-0"
+                    aria-label="Marcar como entregue"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    {i === 0 ? "Entregue" : ""}
+                  </Button>
                 </li>
               ))}
             </ol>
