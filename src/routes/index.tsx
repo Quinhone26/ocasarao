@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { DeliveryCard } from "@/components/DeliveryCard";
 import { DeliveryForm, type DeliveryFormValues } from "@/components/DeliveryForm";
 import type { Delivery, DeliveryStatus } from "@/lib/deliveries";
-import { useDeliveries, buildMapsUrl, formatBRL, statusLabel } from "@/lib/deliveries";
+import { useDeliveries, buildMapsUrl, formatBRL, statusLabel, distanceMeters } from "@/lib/deliveries";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -115,6 +115,49 @@ function Index() {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onVisible);
     };
+  }, [items]);
+
+  // Watcher de GPS: quando o usuário está a menos de 50 m de uma entrega
+  // "em_rota" com lat/lng salvos, dispara o mesmo prompt de chegada.
+  // Requer 2 leituras seguidas dentro do raio (≈ evita disparo por spike de GPS).
+  const geoTriggeredRef = useRef<Set<string>>(new Set());
+  const nearHitsRef = useRef<Map<string, number>>(new Map());
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) return;
+    const enRoute = items.filter(
+      (d) => d.status === "em_rota" && typeof d.lat === "number" && typeof d.lng === "number",
+    );
+    if (enRoute.length === 0) return;
+
+    const ARRIVAL_RADIUS_M = 50;
+    const REQUIRED_HITS = 2;
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const me = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        for (const d of enRoute) {
+          if (geoTriggeredRef.current.has(d.id)) continue;
+          const dist = distanceMeters(me, { lat: d.lat as number, lng: d.lng as number });
+          if (dist <= ARRIVAL_RADIUS_M) {
+            const hits = (nearHitsRef.current.get(d.id) ?? 0) + 1;
+            nearHitsRef.current.set(d.id, hits);
+            if (hits >= REQUIRED_HITS) {
+              geoTriggeredRef.current.add(d.id);
+              nearHitsRef.current.delete(d.id);
+              setArrivalPromptId((cur) => cur ?? d.id);
+              break;
+            }
+          } else {
+            nearHitsRef.current.delete(d.id);
+          }
+        }
+      },
+      () => {
+        /* silencioso — sem permissão o app segue funcionando */
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
   }, [items]);
 
   const arrivalTarget = arrivalPromptId ? items.find((x) => x.id === arrivalPromptId) : undefined;

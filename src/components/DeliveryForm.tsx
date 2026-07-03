@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,8 @@ export interface DeliveryFormValues {
   valor: number;
   dataHora: string;
   agendadoPara: string; // "" quando não programada
+  lat: number | null;
+  lng: number | null;
   status: DeliveryStatus;
 }
 
@@ -47,6 +49,8 @@ const empty: DeliveryFormValues = {
   valor: 0,
   dataHora: "",
   agendadoPara: "",
+  lat: null,
+  lng: null,
   status: "pendente",
 };
 
@@ -83,6 +87,8 @@ export function DeliveryForm({
         valor: initial.valor,
         dataHora: toLocalInput(initial.dataHora),
         agendadoPara: initial.agendadoPara ? toLocalInput(initial.agendadoPara) : "",
+        lat: initial.lat ?? null,
+        lng: initial.lng ?? null,
         status: initial.status,
       });
     } else {
@@ -165,7 +171,34 @@ export function DeliveryForm({
       valor: Number(v.valor) || 0,
       dataHora: new Date(v.dataHora).toISOString(),
       agendadoPara: v.agendadoPara ? new Date(v.agendadoPara).toISOString() : "",
+      lat: v.lat ?? null,
+      lng: v.lng ?? null,
     });
+  };
+
+  const [geoBusy, setGeoBusy] = useState(false);
+  const captureLocation = () => {
+    if (!("geolocation" in navigator)) {
+      toast.error("Geolocalização não disponível neste dispositivo");
+      return;
+    }
+    setGeoBusy(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setV((p) => ({ ...p, lat: pos.coords.latitude, lng: pos.coords.longitude }));
+        setGeoBusy(false);
+        toast.success("Localização salva para esta entrega");
+      },
+      (err) => {
+        setGeoBusy(false);
+        const msg =
+          err.code === err.PERMISSION_DENIED
+            ? "Permissão de localização negada"
+            : "Não foi possível obter a localização";
+        toast.error(msg);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+    );
   };
 
   return (
@@ -257,6 +290,41 @@ export function DeliveryForm({
         <div className="space-y-1.5">
           <Label htmlFor="complemento">Complemento</Label>
           <Input id="complemento" value={v.complemento} onChange={(e) => set("complemento", e.target.value)} maxLength={100} />
+        </div>
+      </div>
+      <div className="space-y-2 rounded-lg border border-border p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-medium">Localização do destino (GPS)</p>
+            <p className="text-xs text-muted-foreground">
+              {v.lat != null && v.lng != null
+                ? `Salvo: ${v.lat.toFixed(5)}, ${v.lng.toFixed(5)}`
+                : "Opcional. Se salvo, o app confirma a entrega quando você chegar (~50 m)."}
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-1">
+            {v.lat != null && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setV((p) => ({ ...p, lat: null, lng: null }))}
+              >
+                Limpar
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={captureLocation}
+              disabled={geoBusy}
+              className="gap-1.5"
+            >
+              {geoBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+              Usar minha localização
+            </Button>
+          </div>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
