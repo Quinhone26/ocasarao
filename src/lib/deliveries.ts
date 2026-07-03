@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { z } from "zod";
 import { supabase, type DeliveryRow } from "@/integrations/supabase/client";
+import { formatCep, isValidCep, normalizeCep } from "@/lib/cep";
 
 export type DeliveryStatus = "pendente" | "em_rota" | "entregue" | "cancelada";
 
@@ -36,11 +37,15 @@ export const deliverySchema = z.object({
   cep: z
     .string()
     .trim()
-    .max(9)
     .default("")
+    // Normaliza para 00000-000 (ou "" se vazio) antes de validar.
+    .transform((s) => {
+      const d = normalizeCep(s);
+      return d.length === 0 ? "" : formatCep(d);
+    })
     .refine(
-      (s) => s === "" || /^\d{5}-?\d{3}$/.test(s),
-      "CEP inválido — use o formato 00000-000",
+      (s) => s === "" || isValidCep(s),
+      "CEP inválido — precisa ter 8 dígitos e não pode ser sequência repetida",
     ),
   endereco: z.string().trim().min(1, "Endereço obrigatório").max(200),
   numero: z.string().trim().max(20).default(""),
@@ -241,13 +246,22 @@ export function useDeliveries() {
   const update = useCallback(
     async (id: string, patch: Partial<Delivery>) => {
       const before = items.find((x) => x.id === id);
+      // Normaliza/valida o CEP também em updates parciais.
+      const normalized: Partial<Delivery> = { ...patch };
+      if (patch.cep !== undefined) {
+        const digits = normalizeCep(patch.cep);
+        if (digits.length > 0 && !isValidCep(digits)) {
+          throw new Error("CEP inválido — precisa ter 8 dígitos");
+        }
+        normalized.cep = digits.length === 0 ? "" : formatCep(digits);
+      }
       localOpsRef.current.add(id);
       applyItems((prev) =>
-        prev.map((d) => (d.id === id ? { ...d, ...patch } : d)),
+        prev.map((d) => (d.id === id ? { ...d, ...normalized } : d)),
       );
       const { error } = await supabase
         .from("deliveries")
-        .update(toRow(patch))
+        .update(toRow(normalized))
         .eq("id", id);
       if (error) {
         localOpsRef.current.delete(id);
