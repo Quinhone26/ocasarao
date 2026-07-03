@@ -361,7 +361,7 @@ export function DeliveryForm({
             onChange={(e) =>
               set(
                 "agendadoPara",
-                e.target.checked ? toLocalInput(new Date(Date.now() + 60 * 60 * 1000).toISOString()) : "",
+                e.target.checked ? toLocalInput(new Date(Date.now() + 60 * 60 * 1000).toISOString()) : null,
               )
             }
           />
