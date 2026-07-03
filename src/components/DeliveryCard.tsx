@@ -32,7 +32,7 @@ export function DeliveryCard({
             <h3 className="font-semibold text-base leading-tight truncate">{d.cliente}</h3>
             {d.telefone && (
               <a
-                href={`tel:${d.telefone}`}
+                href={`tel:${d.telefone.replace(/\D/g, "")}`}
                 className="mt-1 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary"
               >
                 <Phone className="w-3.5 h-3.5" />
