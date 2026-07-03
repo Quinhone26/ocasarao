@@ -23,7 +23,7 @@ export interface DeliveryFormValues {
   observacoes: string;
   valor: number;
   dataHora: string;
-  agendadoPara: string; // "" quando não programada
+  agendadoPara: string | null; // ISO ou null quando não programada
   lat: number | null;
   lng: number | null;
   status: DeliveryStatus;
@@ -48,7 +48,7 @@ const empty: DeliveryFormValues = {
   observacoes: "",
   valor: 0,
   dataHora: "",
-  agendadoPara: "",
+  agendadoPara: null,
   lat: null,
   lng: null,
   status: "pendente",
@@ -86,7 +86,7 @@ export function DeliveryForm({
         observacoes: initial.observacoes,
         valor: initial.valor,
         dataHora: toLocalInput(initial.dataHora),
-        agendadoPara: initial.agendadoPara ? toLocalInput(initial.agendadoPara) : "",
+        agendadoPara: initial.agendadoPara ? toLocalInput(initial.agendadoPara) : null,
         lat: initial.lat ?? null,
         lng: initial.lng ?? null,
         status: initial.status,
@@ -170,7 +170,7 @@ export function DeliveryForm({
       ...v,
       valor: Number(v.valor) || 0,
       dataHora: new Date(v.dataHora).toISOString(),
-      agendadoPara: v.agendadoPara ? new Date(v.agendadoPara).toISOString() : "",
+      agendadoPara: v.agendadoPara ? new Date(v.agendadoPara).toISOString() : null,
       lat: v.lat ?? null,
       lng: v.lng ?? null,
     });
@@ -361,7 +361,7 @@ export function DeliveryForm({
             onChange={(e) =>
               set(
                 "agendadoPara",
-                e.target.checked ? toLocalInput(new Date(Date.now() + 60 * 60 * 1000).toISOString()) : "",
+                e.target.checked ? toLocalInput(new Date(Date.now() + 60 * 60 * 1000).toISOString()) : null,
               )
             }
           />
@@ -372,7 +372,7 @@ export function DeliveryForm({
             <Input
               id="agendadoPara"
               type="datetime-local"
-              value={v.agendadoPara}
+              value={v.agendadoPara ?? ""}
               onChange={(e) => set("agendadoPara", e.target.value)}
             />
           </div>

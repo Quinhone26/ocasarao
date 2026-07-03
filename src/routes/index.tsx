@@ -15,6 +15,22 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   component: Index,
+  errorComponent: ({ error, reset }) => (
+    <div className="min-h-screen grid place-items-center bg-background p-6 text-center">
+      <div className="max-w-sm">
+        <h2 className="text-lg font-semibold">Algo deu errado</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {error instanceof Error ? error.message : "Erro inesperado"}
+        </p>
+        <button
+          onClick={reset}
+          className="mt-4 inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+        >
+          Tentar novamente
+        </button>
+      </div>
+    </div>
+  ),
 });
 
 type Filter = "todas" | DeliveryStatus;
@@ -30,20 +46,28 @@ function Index() {
   const navigatedIdRef = useRef<string | undefined>(undefined);
   const navigatedAtRef = useRef<number>(0);
 
-  const counts = useMemo(() => ({
-    pendente: items.filter((d) => d.status === "pendente").length,
-    em_rota: items.filter((d) => d.status === "em_rota").length,
-    entregue: items.filter((d) => d.status === "entregue").length,
-    cancelada: items.filter((d) => d.status === "cancelada").length,
-  }), [items]);
+  const counts = useMemo(() => {
+    const c = { pendente: 0, em_rota: 0, entregue: 0, cancelada: 0 };
+    for (const d of items) c[d.status]++;
+    return c;
+  }, [items]);
 
   const todayStats = useMemo(() => {
     const today = new Date().toDateString();
-    const day = items.filter((d) => new Date(d.dataHora).toDateString() === today);
-    const entregues = day.filter((d) => d.status === "entregue").length;
-    const pendentes = day.filter((d) => d.status === "pendente" || d.status === "em_rota").length;
-    const total = day.length;
-    const receita = day.filter((d) => d.status === "entregue").reduce((s, d) => s + d.valor, 0);
+    let total = 0;
+    let entregues = 0;
+    let pendentes = 0;
+    let receita = 0;
+    for (const d of items) {
+      if (new Date(d.dataHora).toDateString() !== today) continue;
+      total++;
+      if (d.status === "entregue") {
+        entregues++;
+        receita += d.valor;
+      } else if (d.status === "pendente" || d.status === "em_rota") {
+        pendentes++;
+      }
+    }
     return {
       total,
       entregues,
@@ -71,21 +95,34 @@ function Index() {
   const openNew = () => { setEditing(undefined); setFormOpen(true); };
   const openEdit = (d: Delivery) => { setEditing(d); setFormOpen(true); };
 
-  const handleSubmit = (v: DeliveryFormValues) => {
-    if (editing) {
-      update(editing.id, v);
-      toast.success("Entrega atualizada");
-    } else {
-      create(v);
-      toast.success("Entrega cadastrada");
+  const handleSubmit = async (v: DeliveryFormValues) => {
+    try {
+      if (editing) {
+        await update(editing.id, v);
+        toast.success("Entrega atualizada");
+      } else {
+        await create(v);
+        toast.success("Entrega cadastrada");
+      }
+      setFormOpen(false);
+      setEditing(undefined);
+    } catch (err) {
+      console.error(err);
+      toast.error(editing ? "Erro ao atualizar entrega" : "Erro ao cadastrar entrega", {
+        description: err instanceof Error ? err.message : undefined,
+      });
     }
-    setFormOpen(false);
-    setEditing(undefined);
   };
 
-  const handleNavigate = (d: Delivery) => {
+  const handleNavigate = async (d: Delivery) => {
     window.open(buildMapsUrl(d), "_blank", "noopener");
-    if (d.status === "pendente") update(d.id, { status: "em_rota" });
+    if (d.status === "pendente") {
+      try {
+        await update(d.id, { status: "em_rota" });
+      } catch {
+        /* update falhou — status permanece; realtime irá alinhar */
+      }
+    }
     navigatedIdRef.current = d.id;
     navigatedAtRef.current = Date.now();
   };
@@ -94,6 +131,13 @@ function Index() {
   // Só dispara se: (1) usuário navegou para uma entrega, (2) passou pelo menos
   // 15s (evita disparar quando ele só troca de aba rapidinho) e (3) a entrega
   // ainda não está marcada como entregue.
+  // Mantemos uma ref sempre atualizada com os items para os watchers abaixo
+  // não reiniciarem a cada refresh do realtime.
+  const itemsRef = useRef(items);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState !== "visible") return;
@@ -101,7 +145,7 @@ function Index() {
       if (!id) return;
       const elapsed = Date.now() - navigatedAtRef.current;
       if (elapsed < 15_000) return;
-      const target = items.find((x) => x.id === id);
+      const target = itemsRef.current.find((x) => x.id === id);
       if (!target || target.status === "entregue" || target.status === "cancelada") {
         navigatedIdRef.current = undefined;
         return;
@@ -115,19 +159,30 @@ function Index() {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onVisible);
     };
-  }, [items]);
+  }, []);
 
   // Watcher de GPS: quando o usuário está a menos de 50 m de uma entrega
   // "em_rota" com lat/lng salvos, dispara o mesmo prompt de chegada.
-  // Requer 2 leituras seguidas dentro do raio (≈ evita disparo por spike de GPS).
+  // Requer 2 leituras seguidas dentro do raio (evita disparo por spike de GPS).
   const geoTriggeredRef = useRef<Set<string>>(new Set());
   const nearHitsRef = useRef<Map<string, number>>(new Map());
+
+  // Limpa flags quando a entrega deixa de estar em rota — permite reativar
+  // o prompt se o motoboy voltar depois.
+  useEffect(() => {
+    const activeIds = new Set(
+      items.filter((d) => d.status === "em_rota").map((d) => d.id),
+    );
+    for (const id of geoTriggeredRef.current) {
+      if (!activeIds.has(id)) geoTriggeredRef.current.delete(id);
+    }
+    for (const id of nearHitsRef.current.keys()) {
+      if (!activeIds.has(id)) nearHitsRef.current.delete(id);
+    }
+  }, [items]);
+
   useEffect(() => {
     if (typeof navigator === "undefined" || !("geolocation" in navigator)) return;
-    const enRoute = items.filter(
-      (d) => d.status === "em_rota" && typeof d.lat === "number" && typeof d.lng === "number",
-    );
-    if (enRoute.length === 0) return;
 
     const ARRIVAL_RADIUS_M = 50;
     const REQUIRED_HITS = 2;
@@ -135,6 +190,12 @@ function Index() {
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const me = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const enRoute = itemsRef.current.filter(
+          (d) =>
+            d.status === "em_rota" &&
+            typeof d.lat === "number" &&
+            typeof d.lng === "number",
+        );
         for (const d of enRoute) {
           if (geoTriggeredRef.current.has(d.id)) continue;
           const dist = distanceMeters(me, { lat: d.lat as number, lng: d.lng as number });
@@ -158,17 +219,20 @@ function Index() {
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
     );
     return () => navigator.geolocation.clearWatch(watchId);
-  }, [items]);
+  }, []);
 
   const arrivalTarget = arrivalPromptId ? items.find((x) => x.id === arrivalPromptId) : undefined;
 
-  const confirmArrival = (id?: string) => {
+  const confirmArrival = async (id?: string) => {
     const target = id ? items.find((x) => x.id === id) : arrivalTarget;
-    if (target) {
-      update(target.id, { status: "entregue" });
-      toast.success(`${target.cliente} · marcada como entregue`);
-    }
     setArrivalPromptId(undefined);
+    if (!target) return;
+    try {
+      await update(target.id, { status: "entregue" });
+      toast.success(`${target.cliente} · marcada como entregue`);
+    } catch {
+      toast.error("Erro ao marcar como entregue");
+    }
   };
 
   // Quando o app detecta chegada (voltar do Maps ou GPS), mostra um snackbar
@@ -199,21 +263,54 @@ function Index() {
   }, [arrivalTarget?.id]);
 
 
-  const handleDeliver = (d: Delivery) => {
-    update(d.id, { status: "entregue" });
-    toast.success(`${d.cliente} · marcada como entregue`);
-  };
-
-  const confirmDelete = () => {
-    if (deleting) {
-      remove(deleting.id);
-      toast.success("Entrega removida");
-      setDeleting(undefined);
+  const handleDeliver = async (d: Delivery) => {
+    try {
+      await update(d.id, { status: "entregue" });
+      toast.success(`${d.cliente} · marcada como entregue`);
+    } catch {
+      toast.error("Erro ao marcar como entregue");
     }
   };
 
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    const target = deleting;
+    setDeleting(undefined);
+    try {
+      await remove(target.id);
+      toast.success("Entrega removida");
+    } catch {
+      toast.error("Erro ao remover entrega");
+    }
+  };
+
+  // Indicador de "offline" — apenas informativo. Escritas ainda são tentadas
+  // e falham silenciosamente com toast de erro se não houver conexão.
+  const [online, setOnline] = useState(
+    typeof navigator === "undefined" ? true : navigator.onLine,
+  );
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-background pb-28">
+    <div className="min-h-screen bg-background pb-36">
+      {!online && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed top-0 inset-x-0 z-40 bg-destructive text-destructive-foreground text-center text-xs font-medium py-1.5"
+        >
+          Você está offline — mudanças não serão salvas até reconectar
+        </div>
+      )}
       <div className="mx-auto max-w-xl">
         {/* Header */}
         <header className="sticky top-0 z-20 bg-primary text-primary-foreground px-4 pt-6 pb-4 shadow-elevated">
