@@ -184,8 +184,8 @@ function RotaPage() {
 
   // Renderiza o mapa quando temos origem/candidatos, e desenha a rota quando disponível.
   useEffect(() => {
+    if (mapUnavailable) return;
     if (!mapRef.current || !origin) return;
-    let cancelled = false;
     loadGoogleMaps()
       .then((g) => {
         if (cancelled || !mapRef.current) return;
