@@ -115,6 +115,13 @@ function Index() {
   // Só dispara se: (1) usuário navegou para uma entrega, (2) passou pelo menos
   // 15s (evita disparar quando ele só troca de aba rapidinho) e (3) a entrega
   // ainda não está marcada como entregue.
+  // Mantemos uma ref sempre atualizada com os items para os watchers abaixo
+  // não reiniciarem a cada refresh do realtime.
+  const itemsRef = useRef(items);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState !== "visible") return;
@@ -122,7 +129,7 @@ function Index() {
       if (!id) return;
       const elapsed = Date.now() - navigatedAtRef.current;
       if (elapsed < 15_000) return;
-      const target = items.find((x) => x.id === id);
+      const target = itemsRef.current.find((x) => x.id === id);
       if (!target || target.status === "entregue" || target.status === "cancelada") {
         navigatedIdRef.current = undefined;
         return;
@@ -136,19 +143,30 @@ function Index() {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onVisible);
     };
-  }, [items]);
+  }, []);
 
   // Watcher de GPS: quando o usuário está a menos de 50 m de uma entrega
   // "em_rota" com lat/lng salvos, dispara o mesmo prompt de chegada.
-  // Requer 2 leituras seguidas dentro do raio (≈ evita disparo por spike de GPS).
+  // Requer 2 leituras seguidas dentro do raio (evita disparo por spike de GPS).
   const geoTriggeredRef = useRef<Set<string>>(new Set());
   const nearHitsRef = useRef<Map<string, number>>(new Map());
+
+  // Limpa flags quando a entrega deixa de estar em rota — permite reativar
+  // o prompt se o motoboy voltar depois.
+  useEffect(() => {
+    const activeIds = new Set(
+      items.filter((d) => d.status === "em_rota").map((d) => d.id),
+    );
+    for (const id of geoTriggeredRef.current) {
+      if (!activeIds.has(id)) geoTriggeredRef.current.delete(id);
+    }
+    for (const id of nearHitsRef.current.keys()) {
+      if (!activeIds.has(id)) nearHitsRef.current.delete(id);
+    }
+  }, [items]);
+
   useEffect(() => {
     if (typeof navigator === "undefined" || !("geolocation" in navigator)) return;
-    const enRoute = items.filter(
-      (d) => d.status === "em_rota" && typeof d.lat === "number" && typeof d.lng === "number",
-    );
-    if (enRoute.length === 0) return;
 
     const ARRIVAL_RADIUS_M = 50;
     const REQUIRED_HITS = 2;
@@ -156,6 +174,12 @@ function Index() {
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const me = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const enRoute = itemsRef.current.filter(
+          (d) =>
+            d.status === "em_rota" &&
+            typeof d.lat === "number" &&
+            typeof d.lng === "number",
+        );
         for (const d of enRoute) {
           if (geoTriggeredRef.current.has(d.id)) continue;
           const dist = distanceMeters(me, { lat: d.lat as number, lng: d.lng as number });
@@ -179,7 +203,7 @@ function Index() {
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
     );
     return () => navigator.geolocation.clearWatch(watchId);
-  }, [items]);
+  }, []);
 
   const arrivalTarget = arrivalPromptId ? items.find((x) => x.id === arrivalPromptId) : undefined;
 
