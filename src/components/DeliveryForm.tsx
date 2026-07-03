@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import type { Delivery, DeliveryStatus } from "@/lib/deliveries";
 import { statusLabel } from "@/lib/deliveries";
 import { formatCep, lookupCep, normalizeCep } from "@/lib/cep";
+import { currencyMaskFromNumber, formatCurrencyFromDigits, formatPhone, parseCurrencyToNumber } from "@/lib/masks";
 
 export interface DeliveryFormValues {
   cliente: string;
