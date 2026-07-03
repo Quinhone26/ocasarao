@@ -15,6 +15,22 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   component: Index,
+  errorComponent: ({ error, reset }) => (
+    <div className="min-h-screen grid place-items-center bg-background p-6 text-center">
+      <div className="max-w-sm">
+        <h2 className="text-lg font-semibold">Algo deu errado</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {error instanceof Error ? error.message : "Erro inesperado"}
+        </p>
+        <button
+          onClick={reset}
+          className="mt-4 inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+        >
+          Tentar novamente
+        </button>
+      </div>
+    </div>
+  ),
 });
 
 type Filter = "todas" | DeliveryStatus;
