@@ -287,12 +287,13 @@ export function DeliveryForm({
         </div>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="cep">CEP</Label>
+        <Label htmlFor="cep">CEP *</Label>
         <div className="relative">
           <Input
             id="cep"
             value={v.cep}
             onChange={(e) => handleCepChange(e.target.value)}
+            onBlur={cepBlur}
             inputMode="numeric"
             placeholder="00000-000"
             maxLength={9}
