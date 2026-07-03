@@ -286,45 +286,71 @@ export function DeliveryForm({
           />
         </div>
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="cep">CEP *</Label>
-        <div className="relative">
-          <Input
-            id="cep"
-            value={v.cep}
-            onChange={(e) => handleCepChange(e.target.value)}
-            onBlur={cepBlur}
-            inputMode="numeric"
-            placeholder="00000-000"
-            maxLength={9}
-            aria-invalid={!!cepError}
-            aria-describedby={cepError ? "cep-error" : undefined}
-          />
-          {cepLoading && (
-            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
-          )}
-        </div>
-        {cepError && (
-          <div
-            id="cep-error"
-            className="flex items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            <span className="min-w-0">{cepError.message}</span>
-            {cepError.kind === "network" && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 shrink-0 text-destructive hover:bg-destructive/20 hover:text-destructive"
-                onClick={retryCep}
-                disabled={cepLoading}
+      {(() => {
+        const digits = normalizeCep(v.cep);
+        const missing = digits.length > 0 && digits.length < 8;
+        const complete = digits.length === 8 && isValidCep(digits);
+        const invalidNow = !!cepError || missing;
+        return (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="cep">CEP *</Label>
+              {missing && !cepError && (
+                <span className="text-xs text-muted-foreground">
+                  faltam {8 - digits.length} dígito(s)
+                </span>
+              )}
+              {complete && !cepError && !cepLoading && (
+                <span className="text-xs text-status-delivered">CEP válido</span>
+              )}
+            </div>
+            <div className="relative">
+              <Input
+                id="cep"
+                value={v.cep}
+                onChange={(e) => handleCepChange(e.target.value)}
+                onBlur={cepBlur}
+                inputMode="numeric"
+                placeholder="00000-000"
+                maxLength={9}
+                aria-invalid={invalidNow}
+                aria-describedby={cepError ? "cep-error" : undefined}
+                className={
+                  invalidNow
+                    ? "border-destructive text-destructive focus-visible:ring-destructive pr-9"
+                    : complete
+                      ? "border-status-delivered/60 focus-visible:ring-status-delivered pr-9"
+                      : "pr-9"
+                }
+              />
+              {cepLoading && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+              )}
+            </div>
+            {cepError && (
+              <div
+                id="cep-error"
+                role="alert"
+                className="flex items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
               >
-                Tentar novamente
-              </Button>
+                <span className="min-w-0">{cepError.message}</span>
+                {cepError.kind === "network" && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 shrink-0 text-destructive hover:bg-destructive/20 hover:text-destructive"
+                    onClick={retryCep}
+                    disabled={cepLoading}
+                  >
+                    Tentar novamente
+                  </Button>
+                )}
+              </div>
             )}
           </div>
-        )}
-      </div>
+        );
+      })()}
       <div className="space-y-1.5">
         <Label htmlFor="endereco">Endereço *</Label>
         <Input id="endereco" value={v.endereco} onChange={(e) => set("endereco", e.target.value)} required maxLength={200} />
