@@ -70,7 +70,7 @@ export function DeliveryForm({
     if (initial) {
       setV({
         cliente: initial.cliente,
-        telefone: initial.telefone,
+        telefone: formatPhone(initial.telefone),
         cep: initial.cep ?? "",
         endereco: initial.endereco,
         numero: initial.numero,
