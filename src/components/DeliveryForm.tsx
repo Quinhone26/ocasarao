@@ -58,11 +58,11 @@ export function DeliveryForm({
         complemento: initial.complemento,
         observacoes: initial.observacoes,
         valor: initial.valor,
-        dataHora: initial.dataHora.slice(0, 16),
+        dataHora: toLocalInput(initial.dataHora),
         status: initial.status,
       });
     } else {
-      setV({ ...empty, dataHora: new Date().toISOString().slice(0, 16) });
+      setV({ ...empty, dataHora: toLocalInput(new Date().toISOString()) });
     }
   }, [initial]);
 
