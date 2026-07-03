@@ -192,7 +192,7 @@ function RotaPage() {
         const bounds = new g.maps.LatLngBounds();
         bounds.extend(origin);
 
-        const list = result?.stops.map((s) => s.delivery) ?? candidates;
+        const list = result ? visibleStops.map((s) => s.delivery) : candidates;
         list.forEach((d, i) => {
           if (d.lat == null || d.lng == null) return;
           const pos = { lat: d.lat, lng: d.lng };
