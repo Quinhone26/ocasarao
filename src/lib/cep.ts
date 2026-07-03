@@ -53,17 +53,23 @@ export function getCachedCep(cep: string): CepResult | undefined {
   return cache.get(normalizeCep(cep));
 }
 
-export async function lookupCep(cep: string, signal?: AbortSignal): Promise<CepResult | null> {
+export type CepLookup =
+  | { status: "ok"; data: CepResult; fromCache?: boolean }
+  | { status: "invalid" }
+  | { status: "not_found" }
+  | { status: "network_error" };
+
+export async function lookupCep(cep: string, signal?: AbortSignal): Promise<CepLookup> {
   const clean = normalizeCep(cep);
-  if (clean.length !== 8) return null;
+  if (clean.length !== 8) return { status: "invalid" };
   hydrate();
   const cached = cache.get(clean);
-  if (cached) return cached;
+  if (cached) return { status: "ok", data: cached, fromCache: true };
   try {
     const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`, { signal });
-    if (!res.ok) return null;
+    if (!res.ok) return { status: "network_error" };
     const data = await res.json();
-    if (data?.erro) return null;
+    if (data?.erro) return { status: "not_found" };
     const result: CepResult = {
       cep: data.cep ?? clean,
       logradouro: data.logradouro ?? "",
@@ -73,8 +79,12 @@ export async function lookupCep(cep: string, signal?: AbortSignal): Promise<CepR
     };
     cache.set(clean, result);
     persist();
-    return result;
-  } catch {
-    return null;
+    return { status: "ok", data: result };
+  } catch (err) {
+    if ((err as { name?: string })?.name === "AbortError") {
+      return { status: "network_error" };
+    }
+    return { status: "network_error" };
   }
 }
+
