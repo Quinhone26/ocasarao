@@ -23,7 +23,7 @@ export interface DeliveryFormValues {
   observacoes: string;
   valor: number;
   dataHora: string;
-  agendadoPara: string; // "" quando não programada
+  agendadoPara: string | null; // ISO ou null quando não programada
   lat: number | null;
   lng: number | null;
   status: DeliveryStatus;
