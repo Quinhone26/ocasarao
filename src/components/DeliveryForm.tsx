@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import type { Delivery, DeliveryStatus } from "@/lib/deliveries";
 import { statusLabel } from "@/lib/deliveries";
-import { ALLOWED_CITY, ALLOWED_UF, formatCep, isAllowedCity, lookupCep, normalizeCep } from "@/lib/cep";
+import { ALLOWED_CITY, ALLOWED_UF, formatCep, isAllowedCity, isValidCep, lookupCep, normalizeCep } from "@/lib/cep";
 import { currencyMaskFromNumber, formatCurrencyFromDigits, formatPhone, parseCurrencyToNumber } from "@/lib/masks";
 
 export interface DeliveryFormValues {
