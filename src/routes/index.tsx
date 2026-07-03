@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Search, Bike, BarChart3, ClipboardList } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,9 @@ function Index() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Delivery | undefined>();
   const [deleting, setDeleting] = useState<Delivery | undefined>();
+  const [arrivalPromptId, setArrivalPromptId] = useState<string | undefined>();
+  const navigatedIdRef = useRef<string | undefined>(undefined);
+  const navigatedAtRef = useRef<number>(0);
 
   const counts = useMemo(() => ({
     pendente: items.filter((d) => d.status === "pendente").length,
@@ -83,6 +86,45 @@ function Index() {
   const handleNavigate = (d: Delivery) => {
     window.open(buildMapsUrl(d), "_blank", "noopener");
     if (d.status === "pendente") update(d.id, { status: "em_rota" });
+    navigatedIdRef.current = d.id;
+    navigatedAtRef.current = Date.now();
+  };
+
+  // Ao voltar do Google Maps para o app, pergunta se a entrega foi concluída.
+  // Só dispara se: (1) usuário navegou para uma entrega, (2) passou pelo menos
+  // 15s (evita disparar quando ele só troca de aba rapidinho) e (3) a entrega
+  // ainda não está marcada como entregue.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      const id = navigatedIdRef.current;
+      if (!id) return;
+      const elapsed = Date.now() - navigatedAtRef.current;
+      if (elapsed < 15_000) return;
+      const target = items.find((x) => x.id === id);
+      if (!target || target.status === "entregue" || target.status === "cancelada") {
+        navigatedIdRef.current = undefined;
+        return;
+      }
+      setArrivalPromptId(id);
+      navigatedIdRef.current = undefined;
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, [items]);
+
+  const arrivalTarget = arrivalPromptId ? items.find((x) => x.id === arrivalPromptId) : undefined;
+
+  const confirmArrival = () => {
+    if (arrivalTarget) {
+      update(arrivalTarget.id, { status: "entregue" });
+      toast.success(`${arrivalTarget.cliente} · marcada como entregue`);
+    }
+    setArrivalPromptId(undefined);
   };
 
   const handleDeliver = (d: Delivery) => {
@@ -247,6 +289,25 @@ function Index() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Arrival confirm — mostrado ao voltar do Maps */}
+      <AlertDialog open={!!arrivalTarget} onOpenChange={(o) => { if (!o) setArrivalPromptId(undefined); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Chegou no destino?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Confirmar entrega de <strong>{arrivalTarget?.cliente}</strong>
+              {arrivalTarget?.endereco ? <> em {arrivalTarget.endereco}{arrivalTarget.numero ? `, ${arrivalTarget.numero}` : ""}</> : null}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Ainda não</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmArrival} className="bg-status-delivered text-status-delivered-foreground hover:bg-status-delivered/90">
+              Confirmar entrega
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
