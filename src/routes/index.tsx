@@ -79,21 +79,34 @@ function Index() {
   const openNew = () => { setEditing(undefined); setFormOpen(true); };
   const openEdit = (d: Delivery) => { setEditing(d); setFormOpen(true); };
 
-  const handleSubmit = (v: DeliveryFormValues) => {
-    if (editing) {
-      update(editing.id, v);
-      toast.success("Entrega atualizada");
-    } else {
-      create(v);
-      toast.success("Entrega cadastrada");
+  const handleSubmit = async (v: DeliveryFormValues) => {
+    try {
+      if (editing) {
+        await update(editing.id, v);
+        toast.success("Entrega atualizada");
+      } else {
+        await create(v);
+        toast.success("Entrega cadastrada");
+      }
+      setFormOpen(false);
+      setEditing(undefined);
+    } catch (err) {
+      console.error(err);
+      toast.error(editing ? "Erro ao atualizar entrega" : "Erro ao cadastrar entrega", {
+        description: err instanceof Error ? err.message : undefined,
+      });
     }
-    setFormOpen(false);
-    setEditing(undefined);
   };
 
-  const handleNavigate = (d: Delivery) => {
+  const handleNavigate = async (d: Delivery) => {
     window.open(buildMapsUrl(d), "_blank", "noopener");
-    if (d.status === "pendente") update(d.id, { status: "em_rota" });
+    if (d.status === "pendente") {
+      try {
+        await update(d.id, { status: "em_rota" });
+      } catch {
+        /* update falhou — status permanece; realtime irá alinhar */
+      }
+    }
     navigatedIdRef.current = d.id;
     navigatedAtRef.current = Date.now();
   };
