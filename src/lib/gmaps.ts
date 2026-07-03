@@ -1,3 +1,4 @@
+/// <reference types="google.maps" />
 // Loader do Google Maps JS API — carrega uma única vez, compartilhado entre chamadas.
 let loaderPromise: Promise<typeof google> | null = null;
 
