@@ -285,12 +285,11 @@ function Index() {
     }
   };
 
-  // Indicador de "offline" — apenas informativo. Escritas ainda são tentadas
-  // e falham silenciosamente com toast de erro se não houver conexão.
-  const [online, setOnline] = useState(
-    typeof navigator === "undefined" ? true : navigator.onLine,
-  );
+  // Indicador de "offline" — apenas informativo. Inicializa como `true` para
+  // evitar mismatch de hidratação (SSR sem navigator). O effect ajusta no client.
+  const [online, setOnline] = useState(true);
   useEffect(() => {
+    if (typeof navigator !== "undefined") setOnline(navigator.onLine);
     const on = () => setOnline(true);
     const off = () => setOnline(false);
     window.addEventListener("online", on);
