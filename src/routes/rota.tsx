@@ -474,7 +474,10 @@ function RotaPage() {
                     {s.order}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold truncate">{s.delivery.cliente}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold truncate">{s.delivery.cliente}</p>
+                      <SourceBadge source={s.source} />
+                    </div>
                     <p className="text-xs text-muted-foreground truncate">
                       {[
                         `${s.delivery.endereco}${s.delivery.numero ? ", " + s.delivery.numero : ""}`,
