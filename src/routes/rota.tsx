@@ -68,9 +68,19 @@ function RotaPage() {
     duration: string;
     polyline: string;
   } | null>(null);
+  const [mapUnavailable, setMapUnavailable] = useState(false);
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
   const overlaysRef = useRef<Array<google.maps.Marker | google.maps.Polyline>>([]);
+
+  // Google chama esta função global quando a chave não é aceita no domínio atual.
+  useEffect(() => {
+    const w = window as unknown as { gm_authFailure?: () => void };
+    w.gm_authFailure = () => setMapUnavailable(true);
+    return () => {
+      w.gm_authFailure = undefined;
+    };
+  }, []);
 
   // Entregas candidatas: pendentes ou em rota, com endereço.
   const candidates = useMemo(
@@ -174,6 +184,7 @@ function RotaPage() {
 
   // Renderiza o mapa quando temos origem/candidatos, e desenha a rota quando disponível.
   useEffect(() => {
+    if (mapUnavailable) return;
     if (!mapRef.current || !origin) return;
     let cancelled = false;
     loadGoogleMaps()
@@ -328,24 +339,35 @@ function RotaPage() {
       </header>
 
       <div className="mx-auto w-full max-w-xl px-4 pt-4 space-y-3">
-        <div
-          ref={mapRef}
-          className="w-full h-72 rounded-2xl border border-border bg-muted overflow-hidden"
-        >
-          {!origin && (
-            <div className="h-full grid place-items-center text-sm text-muted-foreground gap-2">
-              {locating ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" /> Obtendo localização…
-                </>
-              ) : (
-                <Button variant="outline" onClick={getLocation}>
-                  <MapPin className="w-4 h-4" /> Permitir localização
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
+        {mapUnavailable ? (
+          <div className="w-full rounded-2xl border border-border bg-muted/50 p-4 text-sm text-muted-foreground flex items-start gap-3">
+            <MapPin className="w-5 h-5 mt-0.5 shrink-0" />
+            <p>
+              Mapa indisponível neste domínio, mas o cálculo da rota funciona
+              normalmente — use a lista abaixo e o botão <strong>Iniciar</strong>{" "}
+              para abrir a navegação no Google Maps.
+            </p>
+          </div>
+        ) : (
+          <div
+            ref={mapRef}
+            className="w-full h-72 rounded-2xl border border-border bg-muted overflow-hidden"
+          >
+            {!origin && (
+              <div className="h-full grid place-items-center text-sm text-muted-foreground gap-2">
+                {locating ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" /> Obtendo localização…
+                  </>
+                ) : (
+                  <Button variant="outline" onClick={getLocation}>
+                    <MapPin className="w-4 h-4" /> Permitir localização
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <Button
           onClick={buildAndOptimize}
