@@ -45,7 +45,8 @@ export const Route = createFileRoute("/rota")({
   ),
 });
 
-type OptimizedStop = { delivery: Delivery; order: number };
+type GeoSource = "input" | "address" | "cep" | "failed";
+type OptimizedStop = { delivery: Delivery; order: number; source: GeoSource };
 
 function fmtDuration(iso: string) {
   const sec = parseInt(iso.replace("s", ""), 10) || 0;
