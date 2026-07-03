@@ -33,7 +33,15 @@ const isoDate = z
 export const deliverySchema = z.object({
   cliente: z.string().trim().min(1, "Cliente obrigatório").max(100),
   telefone: z.string().trim().max(20).default(""),
-  cep: z.string().trim().max(9).default(""),
+  cep: z
+    .string()
+    .trim()
+    .max(9)
+    .default("")
+    .refine(
+      (s) => s === "" || /^\d{5}-?\d{3}$/.test(s),
+      "CEP inválido — use o formato 00000-000",
+    ),
   endereco: z.string().trim().min(1, "Endereço obrigatório").max(200),
   numero: z.string().trim().max(20).default(""),
   bairro: z.string().trim().max(100).default(""),
