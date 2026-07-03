@@ -238,7 +238,7 @@ function RotaPage() {
     return () => {
       cancelled = true;
     };
-  }, [origin, candidates, result]);
+  }, [origin, candidates, result, visibleStops]);
 
   // Paradas ainda ativas (remove entregues/canceladas do plano visível).
   const visibleStops = useMemo(() => {
