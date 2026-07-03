@@ -58,6 +58,10 @@ export function DeliveryForm({
 }) {
   const [v, setV] = useState<DeliveryFormValues>(empty);
   const [cepLoading, setCepLoading] = useState(false);
+  const [cepError, setCepError] = useState<null | {
+    kind: "invalid" | "not_found" | "network";
+    message: string;
+  }>(null);
   const cepAbort = useRef<AbortController | null>(null);
   const lastLookup = useRef<string>("");
 
@@ -85,39 +89,68 @@ export function DeliveryForm({
   const set = <K extends keyof DeliveryFormValues>(k: K, val: DeliveryFormValues[K]) =>
     setV((p) => ({ ...p, [k]: val }));
 
+  const runCepLookup = (digits: string) => {
+    cepAbort.current?.abort();
+    const ctrl = new AbortController();
+    cepAbort.current = ctrl;
+    setCepLoading(true);
+    setCepError(null);
+    lookupCep(digits, ctrl.signal)
+      .then((r) => {
+        if (ctrl.signal.aborted) return;
+        if (r.status === "invalid") {
+          setCepError({ kind: "invalid", message: "CEP inválido — digite os 8 dígitos." });
+          return;
+        }
+        if (r.status === "not_found") {
+          setCepError({ kind: "not_found", message: "CEP não encontrado na base dos Correios." });
+          return;
+        }
+        if (r.status === "network_error") {
+          setCepError({
+            kind: "network",
+            message: "Sem conexão para consultar o CEP. Verifique a internet e tente de novo.",
+          });
+          return;
+        }
+        const d = r.data;
+        // Sobrescreve endereço/bairro/cidade com os valores oficiais do CEP.
+        // Campos vazios da API não apagam o que já existe.
+        setV((p) => ({
+          ...p,
+          endereco: d.logradouro?.trim() ? d.logradouro : p.endereco,
+          bairro: d.bairro?.trim() ? d.bairro : p.bairro,
+          cidade: d.localidade?.trim()
+            ? `${d.localidade}${d.uf ? "/" + d.uf : ""}`
+            : p.cidade,
+        }));
+        if (!r.fromCache) toast.success("Endereço preenchido pelo CEP");
+      })
+      .finally(() => {
+        if (!ctrl.signal.aborted) setCepLoading(false);
+      });
+  };
+
   const handleCepChange = (raw: string) => {
     const digits = normalizeCep(raw);
     setV((p) => ({ ...p, cep: formatCep(digits) }));
+    if (cepError) setCepError(null);
     if (digits.length === 8 && digits !== lastLookup.current) {
       lastLookup.current = digits;
-      cepAbort.current?.abort();
-      const ctrl = new AbortController();
-      cepAbort.current = ctrl;
-      setCepLoading(true);
-      lookupCep(digits, ctrl.signal)
-        .then((r) => {
-          if (ctrl.signal.aborted) return;
-          if (!r) {
-            toast.error("CEP não encontrado");
-            return;
-          }
-          // Sempre sobrescreve endereço/bairro/cidade com os valores oficiais
-          // do CEP, removendo inconsistências caso o usuário tenha digitado
-          // algo antes. Campos vazios da API não apagam o que já existe.
-          setV((p) => ({
-            ...p,
-            endereco: r.logradouro?.trim() ? r.logradouro : p.endereco,
-            bairro: r.bairro?.trim() ? r.bairro : p.bairro,
-            cidade: r.localidade?.trim()
-              ? `${r.localidade}${r.uf ? "/" + r.uf : ""}`
-              : p.cidade,
-          }));
-          toast.success("Endereço preenchido pelo CEP");
-        })
-        .finally(() => {
-          if (!ctrl.signal.aborted) setCepLoading(false);
-        });
+      runCepLookup(digits);
+    } else if (digits.length < 8) {
+      lastLookup.current = "";
     }
+  };
+
+  const retryCep = () => {
+    const digits = normalizeCep(v.cep);
+    if (digits.length !== 8) {
+      setCepError({ kind: "invalid", message: "CEP inválido — digite os 8 dígitos." });
+      return;
+    }
+    lastLookup.current = digits;
+    runCepLookup(digits);
   };
 
   const submit = (e: React.FormEvent) => {
@@ -156,11 +189,33 @@ export function DeliveryForm({
             inputMode="numeric"
             placeholder="00000-000"
             maxLength={9}
+            aria-invalid={!!cepError}
+            aria-describedby={cepError ? "cep-error" : undefined}
           />
           {cepLoading && (
             <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
           )}
         </div>
+        {cepError && (
+          <div
+            id="cep-error"
+            className="flex items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            <span className="min-w-0">{cepError.message}</span>
+            {cepError.kind !== "invalid" && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 shrink-0 text-destructive hover:bg-destructive/20 hover:text-destructive"
+                onClick={retryCep}
+                disabled={cepLoading}
+              >
+                Tentar novamente
+              </Button>
+            )}
+          </div>
+        )}
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="endereco">Endereço *</Label>
