@@ -152,11 +152,15 @@ function RotaPage() {
         id: d.id,
         lat: d.lat,
         lng: d.lng,
+        cep: d.cep,
+        cidade: d.cidade,
         address:
           [
             `${d.endereco}${d.numero ? ", " + d.numero : ""}`,
             d.bairro,
             d.cidade,
+            d.cep,
+            "PR",
           ]
             .filter(Boolean)
             .join(", ") || d.endereco,
