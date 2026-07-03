@@ -320,10 +320,18 @@ function Index() {
             <div className="grid place-items-center w-11 h-11 rounded-xl bg-primary-foreground/10">
               <Bike className="w-6 h-6" />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h1 className="text-lg font-bold leading-tight">RotaExpress</h1>
               <p className="text-xs text-primary-foreground/70">Gestão de entregas</p>
             </div>
+            <Link
+              to="/rota"
+              className="inline-flex items-center gap-1.5 h-10 px-3 rounded-xl bg-accent text-accent-foreground text-sm font-semibold shadow-elevated hover:bg-accent/90"
+              aria-label="Montar rota otimizada"
+            >
+              <RouteIcon className="w-4 h-4" />
+              Rota
+            </Link>
           </div>
         </header>
 
