@@ -339,24 +339,35 @@ function RotaPage() {
       </header>
 
       <div className="mx-auto w-full max-w-xl px-4 pt-4 space-y-3">
-        <div
-          ref={mapRef}
-          className="w-full h-72 rounded-2xl border border-border bg-muted overflow-hidden"
-        >
-          {!origin && (
-            <div className="h-full grid place-items-center text-sm text-muted-foreground gap-2">
-              {locating ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" /> Obtendo localização…
-                </>
-              ) : (
-                <Button variant="outline" onClick={getLocation}>
-                  <MapPin className="w-4 h-4" /> Permitir localização
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
+        {mapUnavailable ? (
+          <div className="w-full rounded-2xl border border-border bg-muted/50 p-4 text-sm text-muted-foreground flex items-start gap-3">
+            <MapPin className="w-5 h-5 mt-0.5 shrink-0" />
+            <p>
+              Mapa indisponível neste domínio, mas o cálculo da rota funciona
+              normalmente — use a lista abaixo e o botão <strong>Iniciar</strong>{" "}
+              para abrir a navegação no Google Maps.
+            </p>
+          </div>
+        ) : (
+          <div
+            ref={mapRef}
+            className="w-full h-72 rounded-2xl border border-border bg-muted overflow-hidden"
+          >
+            {!origin && (
+              <div className="h-full grid place-items-center text-sm text-muted-foreground gap-2">
+                {locating ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" /> Obtendo localização…
+                  </>
+                ) : (
+                  <Button variant="outline" onClick={getLocation}>
+                    <MapPin className="w-4 h-4" /> Permitir localização
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <Button
           onClick={buildAndOptimize}
