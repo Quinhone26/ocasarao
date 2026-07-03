@@ -186,6 +186,7 @@ function RotaPage() {
   useEffect(() => {
     if (mapUnavailable) return;
     if (!mapRef.current || !origin) return;
+    let cancelled = false;
     loadGoogleMaps()
       .then((g) => {
         if (cancelled || !mapRef.current) return;
