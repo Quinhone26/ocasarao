@@ -173,11 +173,24 @@ export function DeliveryForm({
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="telefone">Telefone</Label>
-          <Input id="telefone" value={v.telefone} onChange={(e) => set("telefone", e.target.value)} inputMode="tel" maxLength={20} />
+          <Input
+            id="telefone"
+            value={v.telefone}
+            onChange={(e) => set("telefone", formatPhone(e.target.value))}
+            inputMode="tel"
+            placeholder="(11) 91234-5678"
+            maxLength={16}
+          />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="valor">Valor (R$)</Label>
-          <Input id="valor" type="number" step="0.01" min="0" value={v.valor} onChange={(e) => set("valor", Number(e.target.value))} />
+          <Label htmlFor="valor">Valor</Label>
+          <Input
+            id="valor"
+            value={currencyMaskFromNumber(v.valor)}
+            onChange={(e) => set("valor", parseCurrencyToNumber(formatCurrencyFromDigits(e.target.value)))}
+            inputMode="numeric"
+            placeholder="R$ 0,00"
+          />
         </div>
       </div>
       <div className="space-y-1.5">
