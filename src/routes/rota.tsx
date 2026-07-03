@@ -289,17 +289,17 @@ function RotaPage() {
       })
       .map(encodeURIComponent)
       .join("|");
-    const dest = (() => {
-      const d = result.stops[result.stops.length - 1].delivery;
-      if (d.lat != null && d.lng != null) return `${d.lat},${d.lng}`;
-      return [
-        `${d.endereco}${d.numero ? ", " + d.numero : ""}`,
-        d.bairro,
-        d.cidade,
-      ]
-        .filter(Boolean)
-        .join(", ");
-    })();
+    const last = stops[stops.length - 1].delivery;
+    const dest =
+      last.lat != null && last.lng != null
+        ? `${last.lat},${last.lng}`
+        : [
+            `${last.endereco}${last.numero ? ", " + last.numero : ""}`,
+            last.bairro,
+            last.cidade,
+          ]
+            .filter(Boolean)
+            .join(", ");
     const url =
       `https://www.google.com/maps/dir/?api=1&travelmode=driving` +
       `&origin=${origin.lat},${origin.lng}` +
