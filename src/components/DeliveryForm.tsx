@@ -57,12 +57,16 @@ export function DeliveryForm({
   onCancel: () => void;
 }) {
   const [v, setV] = useState<DeliveryFormValues>(empty);
+  const [cepLoading, setCepLoading] = useState(false);
+  const cepAbort = useRef<AbortController | null>(null);
+  const lastLookup = useRef<string>("");
 
   useEffect(() => {
     if (initial) {
       setV({
         cliente: initial.cliente,
         telefone: initial.telefone,
+        cep: initial.cep ?? "",
         endereco: initial.endereco,
         numero: initial.numero,
         bairro: initial.bairro,
@@ -80,6 +84,35 @@ export function DeliveryForm({
 
   const set = <K extends keyof DeliveryFormValues>(k: K, val: DeliveryFormValues[K]) =>
     setV((p) => ({ ...p, [k]: val }));
+
+  const handleCepChange = (raw: string) => {
+    const digits = normalizeCep(raw);
+    setV((p) => ({ ...p, cep: formatCep(digits) }));
+    if (digits.length === 8 && digits !== lastLookup.current) {
+      lastLookup.current = digits;
+      cepAbort.current?.abort();
+      const ctrl = new AbortController();
+      cepAbort.current = ctrl;
+      setCepLoading(true);
+      lookupCep(digits, ctrl.signal)
+        .then((r) => {
+          if (ctrl.signal.aborted) return;
+          if (!r) {
+            toast.error("CEP não encontrado");
+            return;
+          }
+          setV((p) => ({
+            ...p,
+            endereco: r.logradouro || p.endereco,
+            bairro: r.bairro || p.bairro,
+            cidade: r.localidade ? `${r.localidade}${r.uf ? "/" + r.uf : ""}` : p.cidade,
+          }));
+        })
+        .finally(() => {
+          if (!ctrl.signal.aborted) setCepLoading(false);
+        });
+    }
+  };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,6 +138,22 @@ export function DeliveryForm({
         <div className="space-y-1.5">
           <Label htmlFor="valor">Valor (R$)</Label>
           <Input id="valor" type="number" step="0.01" min="0" value={v.valor} onChange={(e) => set("valor", Number(e.target.value))} />
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="cep">CEP</Label>
+        <div className="relative">
+          <Input
+            id="cep"
+            value={v.cep}
+            onChange={(e) => handleCepChange(e.target.value)}
+            inputMode="numeric"
+            placeholder="00000-000"
+            maxLength={9}
+          />
+          {cepLoading && (
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+          )}
         </div>
       </div>
       <div className="space-y-1.5">
