@@ -11,6 +11,31 @@ export interface CepResult {
   uf: string;
 }
 
+// Cidade única atendida pelo app.
+export const ALLOWED_CITY = "Umuarama";
+export const ALLOWED_UF = "PR";
+
+function normalizeStr(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+/** Retorna true se o endereço (localidade/uf ou string livre da cidade) é Umuarama-PR. */
+export function isAllowedCity(cidade: string, uf?: string): boolean {
+  const c = normalizeStr(cidade);
+  if (!c) return false;
+  const cityOk = c === normalizeStr(ALLOWED_CITY) || c.startsWith(normalizeStr(ALLOWED_CITY));
+  if (uf !== undefined) {
+    return cityOk && normalizeStr(uf) === normalizeStr(ALLOWED_UF);
+  }
+  // Aceita formatos "Umuarama" ou "Umuarama/PR"
+  const hasUf = c.includes("/pr") || c.includes("-pr") || c.endsWith(" pr");
+  return cityOk && (hasUf || !c.includes("/"));
+}
+
 const STORAGE_KEY = "cep_cache_v1";
 const cache = new Map<string, CepResult>();
 let hydrated = false;
