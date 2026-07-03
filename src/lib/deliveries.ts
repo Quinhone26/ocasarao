@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { z } from "zod";
 import { supabase, type DeliveryRow } from "@/integrations/supabase/client";
+import { formatCep, isValidCep, normalizeCep } from "@/lib/cep";
 
 export type DeliveryStatus = "pendente" | "em_rota" | "entregue" | "cancelada";
 
