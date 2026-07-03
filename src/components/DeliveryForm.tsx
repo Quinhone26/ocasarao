@@ -48,7 +48,7 @@ const empty: DeliveryFormValues = {
   observacoes: "",
   valor: 0,
   dataHora: "",
-  agendadoPara: "",
+  agendadoPara: null,
   lat: null,
   lng: null,
   status: "pendente",
