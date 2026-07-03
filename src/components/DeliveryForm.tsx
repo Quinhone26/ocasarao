@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import type { Delivery, DeliveryStatus } from "@/lib/deliveries";
 import { statusLabel } from "@/lib/deliveries";
-import { formatCep, lookupCep, normalizeCep } from "@/lib/cep";
+import { ALLOWED_CITY, ALLOWED_UF, formatCep, isAllowedCity, lookupCep, normalizeCep } from "@/lib/cep";
 import { currencyMaskFromNumber, formatCurrencyFromDigits, formatPhone, parseCurrencyToNumber } from "@/lib/masks";
 
 export interface DeliveryFormValues {
@@ -66,7 +66,7 @@ export function DeliveryForm({
   const [v, setV] = useState<DeliveryFormValues>(empty);
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState<null | {
-    kind: "invalid" | "not_found" | "network";
+    kind: "invalid" | "not_found" | "network" | "out_of_area";
     message: string;
   }>(null);
   const cepAbort = useRef<AbortController | null>(null);
@@ -124,6 +124,14 @@ export function DeliveryForm({
           return;
         }
         const d = r.data;
+        if (!isAllowedCity(d.localidade, d.uf)) {
+          setCepError({
+            kind: "out_of_area",
+            message: `Fora da área de atendimento. Só entregamos em ${ALLOWED_CITY}-${ALLOWED_UF}.`,
+          });
+          toast.error(`CEP fora de ${ALLOWED_CITY}-${ALLOWED_UF}`);
+          return;
+        }
         // Sobrescreve endereço/bairro/cidade com os valores oficiais do CEP.
         // Campos vazios da API não apagam o que já existe.
         setV((p) => ({
@@ -166,6 +174,14 @@ export function DeliveryForm({
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!v.cliente.trim() || !v.endereco.trim()) return;
+    if (v.cidade.trim() && !isAllowedCity(v.cidade)) {
+      toast.error(`Só atendemos ${ALLOWED_CITY}-${ALLOWED_UF}`);
+      setCepError({
+        kind: "out_of_area",
+        message: `Fora da área de atendimento. Só entregamos em ${ALLOWED_CITY}-${ALLOWED_UF}.`,
+      });
+      return;
+    }
     onSubmit({
       ...v,
       valor: Number(v.valor) || 0,
@@ -253,7 +269,7 @@ export function DeliveryForm({
             className="flex items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
           >
             <span className="min-w-0">{cepError.message}</span>
-            {cepError.kind !== "invalid" && (
+            {cepError.kind === "network" && (
               <Button
                 type="button"
                 variant="ghost"
