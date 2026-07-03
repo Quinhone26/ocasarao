@@ -73,6 +73,14 @@ export function formatCep(v: string): string {
   return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
 }
 
+/** Valida: 8 dígitos e não é sequência trivial (00000000, 11111111, ...). */
+export function isValidCep(v: string): boolean {
+  const d = normalizeCep(v);
+  if (d.length !== 8) return false;
+  if (/^(\d)\1{7}$/.test(d)) return false;
+  return true;
+}
+
 export function getCachedCep(cep: string): CepResult | undefined {
   hydrate();
   return cache.get(normalizeCep(cep));
