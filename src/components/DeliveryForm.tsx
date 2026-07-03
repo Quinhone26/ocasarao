@@ -170,7 +170,7 @@ export function DeliveryForm({
       ...v,
       valor: Number(v.valor) || 0,
       dataHora: new Date(v.dataHora).toISOString(),
-      agendadoPara: v.agendadoPara ? new Date(v.agendadoPara).toISOString() : "",
+      agendadoPara: v.agendadoPara ? new Date(v.agendadoPara).toISOString() : null,
       lat: v.lat ?? null,
       lng: v.lng ?? null,
     });
