@@ -124,6 +124,14 @@ export function DeliveryForm({
           return;
         }
         const d = r.data;
+        if (!isAllowedCity(d.localidade, d.uf)) {
+          setCepError({
+            kind: "out_of_area",
+            message: `Fora da área de atendimento. Só entregamos em ${ALLOWED_CITY}-${ALLOWED_UF}.`,
+          });
+          toast.error(`CEP fora de ${ALLOWED_CITY}-${ALLOWED_UF}`);
+          return;
+        }
         // Sobrescreve endereço/bairro/cidade com os valores oficiais do CEP.
         // Campos vazios da API não apagam o que já existe.
         setV((p) => ({
