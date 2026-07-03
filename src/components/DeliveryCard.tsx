@@ -130,4 +130,4 @@ export function DeliveryCard({
   );
 }
 
-export { buildMapsUrl };
+
