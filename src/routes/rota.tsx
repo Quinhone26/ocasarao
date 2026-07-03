@@ -382,7 +382,12 @@ function RotaPage() {
             </div>
 
             <ol className="space-y-2 pb-8">
-              {result.stops.map((s) => (
+              {visibleStops.length === 0 && (
+                <li className="text-center text-sm text-muted-foreground py-6">
+                  Todas as paradas foram concluídas.
+                </li>
+              )}
+              {visibleStops.map((s, i) => (
                 <li
                   key={s.delivery.id}
                   className="flex items-start gap-3 rounded-xl bg-card border border-border p-3"
@@ -401,6 +406,15 @@ function RotaPage() {
                         .join(" · ")}
                     </p>
                   </div>
+                  <Button
+                    size="sm"
+                    onClick={() => markDelivered(s.delivery)}
+                    className="h-9 rounded-lg bg-status-delivered text-status-delivered-foreground hover:bg-status-delivered/90 shrink-0"
+                    aria-label="Marcar como entregue"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    {i === 0 ? "Entregue" : ""}
+                  </Button>
                 </li>
               ))}
             </ol>
