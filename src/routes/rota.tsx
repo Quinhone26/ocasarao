@@ -320,6 +320,39 @@ function RotaPage() {
     window.open(url, "_blank", "noopener");
   };
 
+  // Abre um mapa do Google com as paradas candidatas (antes do cálculo da rota),
+  // usado como fallback quando o mapa embutido não pode ser exibido.
+  const openPreviewInGoogleMaps = () => {
+    if (!origin) {
+      toast.error("Aguarde a localização");
+      return;
+    }
+    if (candidates.length === 0) {
+      toast.error("Nenhuma entrega para exibir");
+      return;
+    }
+    const pts = candidates
+      .map((d) => {
+        if (d.lat != null && d.lng != null) return `${d.lat},${d.lng}`;
+        return [
+          `${d.endereco}${d.numero ? ", " + d.numero : ""}`,
+          d.bairro,
+          d.cidade,
+        ]
+          .filter(Boolean)
+          .join(", ");
+      })
+      .map(encodeURIComponent);
+    const dest = pts[pts.length - 1];
+    const waypoints = pts.slice(0, -1).join("|");
+    const url =
+      `https://www.google.com/maps/dir/?api=1&travelmode=driving` +
+      `&origin=${origin.lat},${origin.lng}` +
+      `&destination=${dest}` +
+      (waypoints ? `&waypoints=${waypoints}` : "");
+    window.open(url, "_blank", "noopener");
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="sticky top-0 z-20 bg-primary text-primary-foreground px-4 pt-6 pb-4 shadow-elevated flex items-center gap-3">
