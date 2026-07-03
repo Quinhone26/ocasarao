@@ -30,20 +30,28 @@ function Index() {
   const navigatedIdRef = useRef<string | undefined>(undefined);
   const navigatedAtRef = useRef<number>(0);
 
-  const counts = useMemo(() => ({
-    pendente: items.filter((d) => d.status === "pendente").length,
-    em_rota: items.filter((d) => d.status === "em_rota").length,
-    entregue: items.filter((d) => d.status === "entregue").length,
-    cancelada: items.filter((d) => d.status === "cancelada").length,
-  }), [items]);
+  const counts = useMemo(() => {
+    const c = { pendente: 0, em_rota: 0, entregue: 0, cancelada: 0 };
+    for (const d of items) c[d.status]++;
+    return c;
+  }, [items]);
 
   const todayStats = useMemo(() => {
     const today = new Date().toDateString();
-    const day = items.filter((d) => new Date(d.dataHora).toDateString() === today);
-    const entregues = day.filter((d) => d.status === "entregue").length;
-    const pendentes = day.filter((d) => d.status === "pendente" || d.status === "em_rota").length;
-    const total = day.length;
-    const receita = day.filter((d) => d.status === "entregue").reduce((s, d) => s + d.valor, 0);
+    let total = 0;
+    let entregues = 0;
+    let pendentes = 0;
+    let receita = 0;
+    for (const d of items) {
+      if (new Date(d.dataHora).toDateString() !== today) continue;
+      total++;
+      if (d.status === "entregue") {
+        entregues++;
+        receita += d.valor;
+      } else if (d.status === "pendente" || d.status === "em_rota") {
+        pendentes++;
+      }
+    }
     return {
       total,
       entregues,
