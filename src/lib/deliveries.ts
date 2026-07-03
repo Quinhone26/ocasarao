@@ -15,6 +15,7 @@ export interface Delivery {
   observacoes: string;
   valor: number;
   dataHora: string; // ISO
+  agendadoPara?: string; // ISO — opcional, horário programado para a entrega
   status: DeliveryStatus;
   criadoEm: string;
 }

@@ -1,4 +1,4 @@
-import { Navigation, Pencil, Trash2, CheckCircle2, Phone, MapPin, Clock } from "lucide-react";
+import { Navigation, Pencil, Trash2, CheckCircle2, Phone, MapPin, Clock, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "./StatusBadge";
 import type { Delivery } from "@/lib/deliveries";
@@ -55,6 +55,21 @@ export function DeliveryCard({
           </div>
           <div className="font-semibold text-primary">{formatBRL(d.valor)}</div>
         </div>
+
+        {d.agendadoPara && (
+          <div className="flex items-center gap-1.5 text-sm rounded-lg bg-accent/15 text-accent-foreground border border-accent/30 px-2.5 py-1.5">
+            <CalendarClock className="w-3.5 h-3.5 shrink-0" />
+            <span className="font-medium">Programada para</span>
+            <span className="ml-auto tabular-nums">
+              {new Date(d.agendadoPara).toLocaleString("pt-BR", {
+                day: "2-digit",
+                month: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          </div>
+        )}
 
         {d.observacoes && (
           <p className="text-sm bg-muted rounded-lg px-3 py-2 text-muted-foreground">{d.observacoes}</p>

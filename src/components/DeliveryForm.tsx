@@ -23,6 +23,7 @@ export interface DeliveryFormValues {
   observacoes: string;
   valor: number;
   dataHora: string;
+  agendadoPara: string; // "" quando não programada
   status: DeliveryStatus;
 }
 
@@ -45,6 +46,7 @@ const empty: DeliveryFormValues = {
   observacoes: "",
   valor: 0,
   dataHora: "",
+  agendadoPara: "",
   status: "pendente",
 };
 
@@ -80,6 +82,7 @@ export function DeliveryForm({
         observacoes: initial.observacoes,
         valor: initial.valor,
         dataHora: toLocalInput(initial.dataHora),
+        agendadoPara: initial.agendadoPara ? toLocalInput(initial.agendadoPara) : "",
         status: initial.status,
       });
     } else {
@@ -161,6 +164,7 @@ export function DeliveryForm({
       ...v,
       valor: Number(v.valor) || 0,
       dataHora: new Date(v.dataHora).toISOString(),
+      agendadoPara: v.agendadoPara ? new Date(v.agendadoPara).toISOString() : "",
     });
   };
 
@@ -270,7 +274,42 @@ export function DeliveryForm({
               ))}
             </SelectContent>
           </Select>
+      </div>
+      <div className="space-y-2 rounded-lg border border-border p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <Label htmlFor="agendar-switch" className="cursor-pointer">
+              Entrega programada
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Ative para definir um horário específico de entrega.
+            </p>
+          </div>
+          <input
+            id="agendar-switch"
+            type="checkbox"
+            className="h-5 w-9 shrink-0 cursor-pointer accent-primary"
+            checked={!!v.agendadoPara}
+            onChange={(e) =>
+              set(
+                "agendadoPara",
+                e.target.checked ? toLocalInput(new Date(Date.now() + 60 * 60 * 1000).toISOString()) : "",
+              )
+            }
+          />
         </div>
+        {v.agendadoPara && (
+          <div className="space-y-1.5">
+            <Label htmlFor="agendadoPara">Horário programado</Label>
+            <Input
+              id="agendadoPara"
+              type="datetime-local"
+              value={v.agendadoPara}
+              onChange={(e) => set("agendadoPara", e.target.value)}
+            />
+          </div>
+        )}
+      </div>
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="observacoes">Observações</Label>
