@@ -162,13 +162,42 @@ function Index() {
 
   const arrivalTarget = arrivalPromptId ? items.find((x) => x.id === arrivalPromptId) : undefined;
 
-  const confirmArrival = () => {
-    if (arrivalTarget) {
-      update(arrivalTarget.id, { status: "entregue" });
-      toast.success(`${arrivalTarget.cliente} · marcada como entregue`);
+  const confirmArrival = (id?: string) => {
+    const target = id ? items.find((x) => x.id === id) : arrivalTarget;
+    if (target) {
+      update(target.id, { status: "entregue" });
+      toast.success(`${target.cliente} · marcada como entregue`);
     }
     setArrivalPromptId(undefined);
   };
+
+  // Quando o app detecta chegada (voltar do Maps ou GPS), mostra um snackbar
+  // persistente com botões "Confirmar entrega" / "Ainda não".
+  useEffect(() => {
+    if (!arrivalTarget) return;
+    const id = arrivalTarget.id;
+    const addr = arrivalTarget.endereco
+      ? `${arrivalTarget.endereco}${arrivalTarget.numero ? ", " + arrivalTarget.numero : ""}`
+      : "";
+    const toastId = toast(`Chegou em ${arrivalTarget.cliente}?`, {
+      description: addr || "Confirme a entrega com um toque.",
+      duration: Infinity,
+      action: {
+        label: "Confirmar entrega",
+        onClick: () => confirmArrival(id),
+      },
+      cancel: {
+        label: "Ainda não",
+        onClick: () => setArrivalPromptId(undefined),
+      },
+      onDismiss: () => setArrivalPromptId((cur) => (cur === id ? undefined : cur)),
+    });
+    return () => {
+      toast.dismiss(toastId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [arrivalTarget?.id]);
+
 
   const handleDeliver = (d: Delivery) => {
     update(d.id, { status: "entregue" });
@@ -336,24 +365,7 @@ function Index() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Arrival confirm — mostrado ao voltar do Maps */}
-      <AlertDialog open={!!arrivalTarget} onOpenChange={(o) => { if (!o) setArrivalPromptId(undefined); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Chegou no destino?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Confirmar entrega de <strong>{arrivalTarget?.cliente}</strong>
-              {arrivalTarget?.endereco ? <> em {arrivalTarget.endereco}{arrivalTarget.numero ? `, ${arrivalTarget.numero}` : ""}</> : null}?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Ainda não</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmArrival} className="bg-status-delivered text-status-delivered-foreground hover:bg-status-delivered/90">
-              Confirmar entrega
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
     </div>
   );
 }
