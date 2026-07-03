@@ -171,7 +171,34 @@ export function DeliveryForm({
       valor: Number(v.valor) || 0,
       dataHora: new Date(v.dataHora).toISOString(),
       agendadoPara: v.agendadoPara ? new Date(v.agendadoPara).toISOString() : "",
+      lat: v.lat ?? null,
+      lng: v.lng ?? null,
     });
+  };
+
+  const [geoBusy, setGeoBusy] = useState(false);
+  const captureLocation = () => {
+    if (!("geolocation" in navigator)) {
+      toast.error("Geolocalização não disponível neste dispositivo");
+      return;
+    }
+    setGeoBusy(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setV((p) => ({ ...p, lat: pos.coords.latitude, lng: pos.coords.longitude }));
+        setGeoBusy(false);
+        toast.success("Localização salva para esta entrega");
+      },
+      (err) => {
+        setGeoBusy(false);
+        const msg =
+          err.code === err.PERMISSION_DENIED
+            ? "Permissão de localização negada"
+            : "Não foi possível obter a localização";
+        toast.error(msg);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+    );
   };
 
   return (
