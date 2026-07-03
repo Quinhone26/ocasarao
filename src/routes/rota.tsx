@@ -373,13 +373,26 @@ function RotaPage() {
 
       <div className="mx-auto w-full max-w-xl px-4 pt-4 space-y-3">
         {mapUnavailable ? (
-          <div className="w-full rounded-2xl border border-border bg-muted/50 p-4 text-sm text-muted-foreground flex items-start gap-3">
-            <MapPin className="w-5 h-5 mt-0.5 shrink-0" />
-            <p>
-              Mapa indisponível neste domínio, mas o cálculo da rota funciona
-              normalmente — use a lista abaixo e o botão <strong>Iniciar</strong>{" "}
-              para abrir a navegação no Google Maps.
-            </p>
+          <div className="w-full rounded-2xl border border-border bg-muted/50 p-4 text-sm text-muted-foreground flex flex-col gap-3">
+            <div className="flex items-start gap-3">
+              <MapPin className="w-5 h-5 mt-0.5 shrink-0" />
+              <p>
+                Mapa indisponível neste domínio, mas o cálculo da rota funciona
+                normalmente — abra o Google Maps em uma nova aba para visualizar
+                as paradas.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={
+                result && origin ? startNavigation : openPreviewInGoogleMaps
+              }
+              disabled={!origin || candidates.length === 0}
+              className="w-full h-10 rounded-xl"
+            >
+              <Navigation className="w-4 h-4" />
+              {result ? "Abrir rota no Google Maps" : "Abrir paradas no Google Maps"}
+            </Button>
           </div>
         ) : (
           <div
