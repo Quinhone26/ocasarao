@@ -16,8 +16,22 @@ export interface Delivery {
   valor: number;
   dataHora: string; // ISO
   agendadoPara?: string; // ISO — opcional, horário programado para a entrega
+  lat?: number; // coordenada do destino (opcional)
+  lng?: number;
   status: DeliveryStatus;
   criadoEm: string;
+}
+
+// Distância entre dois pontos em metros (Haversine).
+export function distanceMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const R = 6371000;
+  const toRad = (v: number) => (v * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
 }
 
 const KEY = "motoboy_deliveries_v1";
