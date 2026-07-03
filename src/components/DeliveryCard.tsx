@@ -2,7 +2,7 @@ import { Navigation, Pencil, Trash2, CheckCircle2, Phone, MapPin, Clock, Calenda
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "./StatusBadge";
 import type { Delivery } from "@/lib/deliveries";
-import { buildMapsUrl, formatBRL } from "@/lib/deliveries";
+import { formatBRL } from "@/lib/deliveries";
 
 export function DeliveryCard({
   d,
