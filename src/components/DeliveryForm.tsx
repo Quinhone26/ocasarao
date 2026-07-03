@@ -174,6 +174,14 @@ export function DeliveryForm({
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!v.cliente.trim() || !v.endereco.trim()) return;
+    if (v.cidade.trim() && !isAllowedCity(v.cidade)) {
+      toast.error(`Só atendemos ${ALLOWED_CITY}-${ALLOWED_UF}`);
+      setCepError({
+        kind: "out_of_area",
+        message: `Fora da área de atendimento. Só entregamos em ${ALLOWED_CITY}-${ALLOWED_UF}.`,
+      });
+      return;
+    }
     onSubmit({
       ...v,
       valor: Number(v.valor) || 0,
