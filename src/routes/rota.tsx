@@ -167,9 +167,13 @@ function RotaPage() {
             .join(", ") || d.endereco,
       }));
       const res = await optimizeRoute({ data: { origin, stops } });
+      const sourceById = new Map<string, GeoSource>(
+        res.resolved.map((r) => [r.id, r.source as GeoSource]),
+      );
       const orderedStops: OptimizedStop[] = res.order.map((idx, position) => ({
         delivery: candidates[idx],
         order: position + 1,
+        source: sourceById.get(candidates[idx].id) ?? "address",
       }));
       setResult({
         stops: orderedStops,
