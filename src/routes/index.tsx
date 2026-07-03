@@ -213,14 +213,17 @@ function Index() {
       </div>
 
       {/* FAB */}
-      <Button
-        onClick={openNew}
-        className="fixed bottom-6 right-1/2 translate-x-[calc(50%+8rem)] h-14 w-14 rounded-full shadow-elevated bg-accent hover:bg-accent/90 text-accent-foreground p-0 z-30"
-        aria-label="Nova entrega"
-        style={{ right: "max(1rem, calc(50vw - 18rem))" }}
-      >
-        <Plus className="w-6 h-6" />
-      </Button>
+      <div className="fixed inset-x-0 bottom-6 pointer-events-none z-30">
+        <div className="mx-auto max-w-xl px-4 flex justify-end">
+          <Button
+            onClick={openNew}
+            className="pointer-events-auto h-14 w-14 rounded-full shadow-elevated bg-accent hover:bg-accent/90 text-accent-foreground p-0"
+            aria-label="Nova entrega"
+          >
+            <Plus className="w-6 h-6" />
+          </Button>
+        </div>
+      </div>
 
       {/* Form dialog */}
       <Dialog open={formOpen} onOpenChange={(o) => { setFormOpen(o); if (!o) setEditing(undefined); }}>
