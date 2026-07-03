@@ -83,6 +83,19 @@ function RotaPage() {
     [items],
   );
 
+  // Paradas ainda ativas (remove entregues/canceladas do plano visível).
+  const visibleStops = useMemo(() => {
+    if (!result) return [];
+    const active = new Set(
+      items
+        .filter((d) => d.status === "pendente" || d.status === "em_rota")
+        .map((d) => d.id),
+    );
+    return result.stops
+      .filter((s) => active.has(s.delivery.id))
+      .map((s, i) => ({ ...s, order: i + 1 }));
+  }, [result, items]);
+
   const getLocation = () => {
     if (!("geolocation" in navigator)) {
       toast.error("GPS indisponível neste dispositivo");
