@@ -23,6 +23,7 @@ export interface DeliveryFormValues {
   observacoes: string;
   valor: number;
   dataHora: string;
+  agendadoPara: string; // "" quando não programada
   status: DeliveryStatus;
 }
 
@@ -45,6 +46,7 @@ const empty: DeliveryFormValues = {
   observacoes: "",
   valor: 0,
   dataHora: "",
+  agendadoPara: "",
   status: "pendente",
 };
 
@@ -80,6 +82,7 @@ export function DeliveryForm({
         observacoes: initial.observacoes,
         valor: initial.valor,
         dataHora: toLocalInput(initial.dataHora),
+        agendadoPara: initial.agendadoPara ? toLocalInput(initial.agendadoPara) : "",
         status: initial.status,
       });
     } else {
