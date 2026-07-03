@@ -1,15 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 import type { Delivery, DeliveryStatus } from "@/lib/deliveries";
 import { statusLabel } from "@/lib/deliveries";
+import { formatCep, lookupCep, normalizeCep } from "@/lib/cep";
 
 export interface DeliveryFormValues {
   cliente: string;
   telefone: string;
+  cep: string;
   endereco: string;
   numero: string;
   bairro: string;
@@ -31,6 +35,7 @@ function toLocalInput(iso: string): string {
 const empty: DeliveryFormValues = {
   cliente: "",
   telefone: "",
+  cep: "",
   endereco: "",
   numero: "",
   bairro: "",
