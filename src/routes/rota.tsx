@@ -58,7 +58,7 @@ function fmtKm(m: number) {
 }
 
 function RotaPage() {
-  const { items } = useDeliveries();
+  const { items, update } = useDeliveries();
   const [origin, setOrigin] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [computing, setComputing] = useState(false);
