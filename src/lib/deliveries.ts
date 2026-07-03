@@ -37,11 +37,15 @@ export const deliverySchema = z.object({
   cep: z
     .string()
     .trim()
-    .max(9)
     .default("")
+    // Normaliza para 00000-000 (ou "" se vazio) antes de validar.
+    .transform((s) => {
+      const d = normalizeCep(s);
+      return d.length === 0 ? "" : formatCep(d);
+    })
     .refine(
-      (s) => s === "" || /^\d{5}-?\d{3}$/.test(s),
-      "CEP inválido — use o formato 00000-000",
+      (s) => s === "" || isValidCep(s),
+      "CEP inválido — precisa ter 8 dígitos e não pode ser sequência repetida",
     ),
   endereco: z.string().trim().min(1, "Endereço obrigatório").max(200),
   numero: z.string().trim().max(20).default(""),
