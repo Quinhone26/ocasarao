@@ -86,7 +86,7 @@ export function DeliveryForm({
         observacoes: initial.observacoes,
         valor: initial.valor,
         dataHora: toLocalInput(initial.dataHora),
-        agendadoPara: initial.agendadoPara ? toLocalInput(initial.agendadoPara) : "",
+        agendadoPara: initial.agendadoPara ? toLocalInput(initial.agendadoPara) : null,
         lat: initial.lat ?? null,
         lng: initial.lng ?? null,
         status: initial.status,
