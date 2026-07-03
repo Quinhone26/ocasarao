@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,8 @@ export interface DeliveryFormValues {
   valor: number;
   dataHora: string;
   agendadoPara: string; // "" quando não programada
+  lat: number | null;
+  lng: number | null;
   status: DeliveryStatus;
 }
 
@@ -47,6 +49,8 @@ const empty: DeliveryFormValues = {
   valor: 0,
   dataHora: "",
   agendadoPara: "",
+  lat: null,
+  lng: null,
   status: "pendente",
 };
 
@@ -83,6 +87,8 @@ export function DeliveryForm({
         valor: initial.valor,
         dataHora: toLocalInput(initial.dataHora),
         agendadoPara: initial.agendadoPara ? toLocalInput(initial.agendadoPara) : "",
+        lat: initial.lat ?? null,
+        lng: initial.lng ?? null,
         status: initial.status,
       });
     } else {
