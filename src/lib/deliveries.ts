@@ -16,8 +16,8 @@ export interface Delivery {
   valor: number;
   dataHora: string; // ISO
   agendadoPara?: string; // ISO — opcional, horário programado para a entrega
-  lat?: number; // coordenada do destino (opcional)
-  lng?: number;
+  lat?: number | null; // coordenada do destino (opcional)
+  lng?: number | null;
   status: DeliveryStatus;
   criadoEm: string;
 }
