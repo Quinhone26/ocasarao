@@ -240,10 +240,41 @@ function RotaPage() {
     };
   }, [origin, candidates, result]);
 
+  // Paradas ainda ativas (remove entregues/canceladas do plano visível).
+  const visibleStops = useMemo(() => {
+    if (!result) return [];
+    const active = new Set(
+      items
+        .filter((d) => d.status === "pendente" || d.status === "em_rota")
+        .map((d) => d.id),
+    );
+    return result.stops
+      .filter((s) => active.has(s.delivery.id))
+      .map((s, i) => ({ ...s, order: i + 1 }));
+  }, [result, items]);
+
+  const markDelivered = async (d: Delivery) => {
+    try {
+      await update(d.id, { status: "entregue" });
+      toast.success(`${d.cliente} marcada como entregue`);
+      // Próxima parada ativa após esta.
+      const remaining = visibleStops.filter((s) => s.delivery.id !== d.id);
+      const next = remaining[0];
+      if (next && origin) {
+        window.open(buildNavUrl(origin, next.delivery), "_blank", "noopener");
+      } else if (!next) {
+        toast.success("Todas as entregas concluídas 🎉");
+      }
+    } catch {
+      toast.error("Falha ao marcar entrega");
+    }
+  };
+
   // Abre navegação no Google Maps já com todas as paradas em ordem.
   const startNavigation = () => {
     if (!result || !origin) return;
-    const waypoints = result.stops
+    const stops = visibleStops.length > 0 ? visibleStops : result.stops;
+    const waypoints = stops
       .slice(0, -1)
       .map((s) => {
         const d = s.delivery;
