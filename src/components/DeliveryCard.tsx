@@ -76,6 +76,19 @@ export function DeliveryCard({
         )}
       </div>
 
+      {d.status === "em_rota" && (
+        <div className="px-3 pb-3">
+          <Button
+            onClick={onDeliver}
+            className="w-full h-12 gap-2 bg-status-delivered text-status-delivered-foreground hover:bg-status-delivered/90 rounded-xl font-semibold"
+          >
+            <CheckCircle2 className="w-5 h-5" />
+            Confirmar entrega
+          </Button>
+        </div>
+      )}
+
+
       <div className="grid grid-cols-4 gap-1 p-2 border-t border-border bg-muted/30">
         <Button
           onClick={onNavigate}
