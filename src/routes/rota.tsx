@@ -48,6 +48,40 @@ export const Route = createFileRoute("/rota")({
 type GeoSource = "input" | "address" | "cep" | "failed";
 type OptimizedStop = { delivery: Delivery; order: number; source: GeoSource };
 
+function SourceBadge({ source }: { source: GeoSource }) {
+  const map: Record<GeoSource, { label: string; title: string; cls: string }> = {
+    input: {
+      label: "GPS",
+      title: "Coordenadas salvas na entrega",
+      cls: "bg-primary/10 text-primary border-primary/20",
+    },
+    address: {
+      label: "Rua",
+      title: "Geocodificado por rua + número",
+      cls: "bg-status-delivered/15 text-status-delivered border-status-delivered/30",
+    },
+    cep: {
+      label: "CEP",
+      title: "Rua não encontrada — usado CEP + cidade/UF",
+      cls: "bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-400",
+    },
+    failed: {
+      label: "?",
+      title: "Falha ao localizar",
+      cls: "bg-destructive/15 text-destructive border-destructive/30",
+    },
+  };
+  const s = map[source];
+  return (
+    <span
+      title={s.title}
+      className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${s.cls}`}
+    >
+      {s.label}
+    </span>
+  );
+}
+
 function fmtDuration(iso: string) {
   const sec = parseInt(iso.replace("s", ""), 10) || 0;
   const h = Math.floor(sec / 3600);
