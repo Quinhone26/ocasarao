@@ -66,7 +66,7 @@ export function DeliveryForm({
   const [v, setV] = useState<DeliveryFormValues>(empty);
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState<null | {
-    kind: "invalid" | "not_found" | "network";
+    kind: "invalid" | "not_found" | "network" | "out_of_area";
     message: string;
   }>(null);
   const cepAbort = useRef<AbortController | null>(null);
