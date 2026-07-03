@@ -101,12 +101,18 @@ export function DeliveryForm({
             toast.error("CEP não encontrado");
             return;
           }
+          // Sempre sobrescreve endereço/bairro/cidade com os valores oficiais
+          // do CEP, removendo inconsistências caso o usuário tenha digitado
+          // algo antes. Campos vazios da API não apagam o que já existe.
           setV((p) => ({
             ...p,
-            endereco: r.logradouro || p.endereco,
-            bairro: r.bairro || p.bairro,
-            cidade: r.localidade ? `${r.localidade}${r.uf ? "/" + r.uf : ""}` : p.cidade,
+            endereco: r.logradouro?.trim() ? r.logradouro : p.endereco,
+            bairro: r.bairro?.trim() ? r.bairro : p.bairro,
+            cidade: r.localidade?.trim()
+              ? `${r.localidade}${r.uf ? "/" + r.uf : ""}`
+              : p.cidade,
           }));
+          toast.success("Endereço preenchido pelo CEP");
         })
         .finally(() => {
           if (!ctrl.signal.aborted) setCepLoading(false);
