@@ -372,7 +372,7 @@ export function DeliveryForm({
             <Input
               id="agendadoPara"
               type="datetime-local"
-              value={v.agendadoPara}
+              value={v.agendadoPara ?? ""}
               onChange={(e) => set("agendadoPara", e.target.value)}
             />
           </div>
