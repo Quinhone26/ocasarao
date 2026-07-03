@@ -1,3 +1,4 @@
+/// <reference types="google.maps" />
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Route as RouteIcon, Navigation, Loader2, MapPin } from "lucide-react";
