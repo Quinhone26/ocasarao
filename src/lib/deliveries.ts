@@ -246,13 +246,22 @@ export function useDeliveries() {
   const update = useCallback(
     async (id: string, patch: Partial<Delivery>) => {
       const before = items.find((x) => x.id === id);
+      // Normaliza/valida o CEP também em updates parciais.
+      const normalized: Partial<Delivery> = { ...patch };
+      if (patch.cep !== undefined) {
+        const digits = normalizeCep(patch.cep);
+        if (digits.length > 0 && !isValidCep(digits)) {
+          throw new Error("CEP inválido — precisa ter 8 dígitos");
+        }
+        normalized.cep = digits.length === 0 ? "" : formatCep(digits);
+      }
       localOpsRef.current.add(id);
       applyItems((prev) =>
-        prev.map((d) => (d.id === id ? { ...d, ...patch } : d)),
+        prev.map((d) => (d.id === id ? { ...d, ...normalized } : d)),
       );
       const { error } = await supabase
         .from("deliveries")
-        .update(toRow(patch))
+        .update(toRow(normalized))
         .eq("id", id);
       if (error) {
         localOpsRef.current.delete(id);
