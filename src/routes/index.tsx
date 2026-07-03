@@ -207,13 +207,16 @@ function Index() {
 
   const arrivalTarget = arrivalPromptId ? items.find((x) => x.id === arrivalPromptId) : undefined;
 
-  const confirmArrival = (id?: string) => {
+  const confirmArrival = async (id?: string) => {
     const target = id ? items.find((x) => x.id === id) : arrivalTarget;
-    if (target) {
-      update(target.id, { status: "entregue" });
-      toast.success(`${target.cliente} · marcada como entregue`);
-    }
     setArrivalPromptId(undefined);
+    if (!target) return;
+    try {
+      await update(target.id, { status: "entregue" });
+      toast.success(`${target.cliente} · marcada como entregue`);
+    } catch {
+      toast.error("Erro ao marcar como entregue");
+    }
   };
 
   // Quando o app detecta chegada (voltar do Maps ou GPS), mostra um snackbar
@@ -244,21 +247,54 @@ function Index() {
   }, [arrivalTarget?.id]);
 
 
-  const handleDeliver = (d: Delivery) => {
-    update(d.id, { status: "entregue" });
-    toast.success(`${d.cliente} · marcada como entregue`);
-  };
-
-  const confirmDelete = () => {
-    if (deleting) {
-      remove(deleting.id);
-      toast.success("Entrega removida");
-      setDeleting(undefined);
+  const handleDeliver = async (d: Delivery) => {
+    try {
+      await update(d.id, { status: "entregue" });
+      toast.success(`${d.cliente} · marcada como entregue`);
+    } catch {
+      toast.error("Erro ao marcar como entregue");
     }
   };
 
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    const target = deleting;
+    setDeleting(undefined);
+    try {
+      await remove(target.id);
+      toast.success("Entrega removida");
+    } catch {
+      toast.error("Erro ao remover entrega");
+    }
+  };
+
+  // Indicador de "offline" — apenas informativo. Escritas ainda são tentadas
+  // e falham silenciosamente com toast de erro se não houver conexão.
+  const [online, setOnline] = useState(
+    typeof navigator === "undefined" ? true : navigator.onLine,
+  );
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-background pb-28">
+    <div className="min-h-screen bg-background pb-36">
+      {!online && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed top-0 inset-x-0 z-40 bg-destructive text-destructive-foreground text-center text-xs font-medium py-1.5"
+        >
+          Você está offline — mudanças não serão salvas até reconectar
+        </div>
+      )}
       <div className="mx-auto max-w-xl">
         {/* Header */}
         <header className="sticky top-0 z-20 bg-primary text-primary-foreground px-4 pt-6 pb-4 shadow-elevated">
