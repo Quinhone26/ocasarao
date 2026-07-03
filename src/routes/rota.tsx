@@ -68,9 +68,19 @@ function RotaPage() {
     duration: string;
     polyline: string;
   } | null>(null);
+  const [mapUnavailable, setMapUnavailable] = useState(false);
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
   const overlaysRef = useRef<Array<google.maps.Marker | google.maps.Polyline>>([]);
+
+  // Google chama esta função global quando a chave não é aceita no domínio atual.
+  useEffect(() => {
+    const w = window as unknown as { gm_authFailure?: () => void };
+    w.gm_authFailure = () => setMapUnavailable(true);
+    return () => {
+      w.gm_authFailure = undefined;
+    };
+  }, []);
 
   // Entregas candidatas: pendentes ou em rota, com endereço.
   const candidates = useMemo(
