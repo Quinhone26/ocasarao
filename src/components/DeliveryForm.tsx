@@ -81,6 +81,7 @@ export function DeliveryForm({
   }>(null);
   const cepAbort = useRef<AbortController | null>(null);
   const lastLookup = useRef<string>("");
+  const [cepData, setCepData] = useState<CepResult | null>(null);
 
   useEffect(() => {
     if (initial) {
