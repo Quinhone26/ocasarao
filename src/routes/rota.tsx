@@ -220,6 +220,35 @@ function RotaPage() {
         duration: res.duration,
         polyline: res.polyline,
       });
+
+      // Persiste lat/lng resolvidos por geocodificação (CEP/rua/OSM) na
+      // entrega — na próxima vez a parada usa as coordenadas salvas
+      // (badge GPS) e não depende mais do nome atualizado da rua.
+      const toPersist = res.resolved.filter(
+        (r) => r.source === "cep" || r.source === "address" || r.source === "osm",
+      );
+      if (toPersist.length > 0) {
+        let saved = 0;
+        await Promise.all(
+          toPersist.map(async (r) => {
+            const current = candidates.find((c) => c.id === r.id);
+            // Evita gravar se já bater com o que está no banco.
+            if (current && current.lat === r.lat && current.lng === r.lng) return;
+            try {
+              await update(r.id, { lat: r.lat, lng: r.lng });
+              saved += 1;
+            } catch (err) {
+              console.error("[rota] persist coords failed", r.id, err);
+            }
+          }),
+        );
+        if (saved > 0) {
+          toast.success(
+            `Coordenadas salvas em ${saved} entrega(s) — próximas rotas serão mais rápidas`,
+          );
+        }
+      }
+
     } catch (err) {
       console.error(err);
       toast.error("Falha ao calcular rota", {
