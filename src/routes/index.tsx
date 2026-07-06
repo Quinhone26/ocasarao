@@ -81,7 +81,9 @@ function Index() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter((d) => {
-      if (filter !== "todas" && d.status !== filter) return false;
+      if (filter === "todas") {
+        if (d.status !== "pendente" && d.status !== "em_rota") return false;
+      } else if (d.status !== filter) return false;
       if (!q) return true;
       return (
         d.cliente.toLowerCase().includes(q) ||
