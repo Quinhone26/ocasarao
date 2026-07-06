@@ -422,9 +422,9 @@ export function DeliveryForm({
         return (
           <div
             role="alert"
-            className="space-y-2 rounded-lg border border-status-warning/40 bg-status-warning/10 p-3 text-sm"
+            className="space-y-2 rounded-lg border border-primary/40 bg-primary/10 p-3 text-sm"
           >
-            <p className="font-medium text-status-warning">
+            <p className="font-medium text-primary">
               O endereço digitado é diferente do que os Correios retornam para este CEP.
             </p>
             <p className="text-xs text-muted-foreground">
