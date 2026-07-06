@@ -45,7 +45,7 @@ export const Route = createFileRoute("/rota")({
   ),
 });
 
-type GeoSource = "input" | "address" | "cep" | "failed";
+type GeoSource = "input" | "address" | "cep" | "osm" | "failed";
 type OptimizedStop = { delivery: Delivery; order: number; source: GeoSource };
 
 function SourceBadge({ source }: { source: GeoSource }) {
@@ -57,13 +57,18 @@ function SourceBadge({ source }: { source: GeoSource }) {
     },
     address: {
       label: "Rua",
-      title: "Geocodificado por rua + número",
+      title: "Geocodificado por rua + número (Google)",
       cls: "bg-status-delivered/15 text-status-delivered border-status-delivered/30",
     },
     cep: {
       label: "CEP",
-      title: "Rua não encontrada — usado CEP + cidade/UF",
+      title: "Rua não encontrada — usado CEP + cidade/UF (Google)",
       cls: "bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-400",
+    },
+    osm: {
+      label: "OSM",
+      title: "Google não localizou — resolvido via OpenStreetMap",
+      cls: "bg-sky-500/15 text-sky-700 border-sky-500/30 dark:text-sky-400",
     },
     failed: {
       label: "?",
