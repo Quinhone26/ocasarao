@@ -100,7 +100,9 @@ export function DeliveryForm({
         agendadoPara: initial.agendadoPara ? toLocalInput(initial.agendadoPara) : null,
         lat: initial.lat ?? null,
         lng: initial.lng ?? null,
-        status: initial.status,
+        status: (["pendente", "em_rota", "entregue", "cancelada"] as DeliveryStatus[]).includes(initial.status)
+          ? initial.status
+          : "pendente",
       });
     } else {
       setV({ ...empty, dataHora: toLocalInput(new Date().toISOString()) });
