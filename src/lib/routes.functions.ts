@@ -46,6 +46,33 @@ async function geocode(
   return loc ?? null;
 }
 
+// Fallback via OpenStreetMap Nominatim — usado quando o Google não localiza
+// nem pelo CEP nem pela rua. Nominatim tem cobertura boa de ruas novas no BR
+// e não depende da chave do Google.
+async function geocodeOSM(address: string): Promise<LatLng | null> {
+  try {
+    const url =
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=${encodeURIComponent(address)}`;
+    const res = await fetch(url, {
+      headers: {
+        // Nominatim exige User-Agent identificando a aplicação.
+        "User-Agent": "ocasarao-delivery/1.0 (contact via app)",
+        "Accept-Language": "pt-BR",
+      },
+    });
+    if (!res.ok) return null;
+    const arr = (await res.json()) as Array<{ lat: string; lon: string }>;
+    const first = arr?.[0];
+    if (!first) return null;
+    const lat = parseFloat(first.lat);
+    const lng = parseFloat(first.lon);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+    return { lat, lng };
+  } catch {
+    return null;
+  }
+}
+
 export const optimizeRoute = createServerFn({ method: "POST" })
   .inputValidator((d) => inputSchema.parse(d))
   .handler(async ({ data }) => {
