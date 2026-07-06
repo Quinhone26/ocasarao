@@ -55,16 +55,13 @@ export const optimizeRoute = createServerFn({ method: "POST" })
       throw new Error("Google Maps não configurado");
     }
 
-    // Geocodifica cada parada priorizando rua+número; se não achar (ex.: rua
-    // renomeada), tenta apenas pelo CEP+cidade+UF, que é mais estável.
+    // Geocodifica cada parada priorizando o CEP (cidade+UF), pois nomes de
+    // rua mudam mas o CEP permanece estável. Se o CEP falhar ou não existir,
+    // cai para rua+número como fallback.
     const resolved = await Promise.all(
       data.stops.map(async (s) => {
         if (s.lat != null && s.lng != null) {
           return { id: s.id, latLng: { lat: s.lat, lng: s.lng }, source: "input" as const };
-        }
-        const primary = await geocode(s.address, GOOGLE_MAPS_API_KEY, LOVABLE_API_KEY);
-        if (primary) {
-          return { id: s.id, latLng: primary, source: "address" as const };
         }
         if (s.cep) {
           const cepQuery = [
@@ -79,6 +76,10 @@ export const optimizeRoute = createServerFn({ method: "POST" })
           if (byCep) {
             return { id: s.id, latLng: byCep, source: "cep" as const };
           }
+        }
+        const fallback = await geocode(s.address, GOOGLE_MAPS_API_KEY, LOVABLE_API_KEY);
+        if (fallback) {
+          return { id: s.id, latLng: fallback, source: "address" as const };
         }
         return { id: s.id, latLng: null, source: "failed" as const };
       }),
