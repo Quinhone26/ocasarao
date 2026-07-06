@@ -108,6 +108,12 @@ export const optimizeRoute = createServerFn({ method: "POST" })
         if (fallback) {
           return { id: s.id, latLng: fallback, source: "address" as const };
         }
+        // Último recurso: OpenStreetMap (Nominatim). Cobre ruas novas ou com
+        // nome diferente do cadastro do Google.
+        const osm = await geocodeOSM(s.address);
+        if (osm) {
+          return { id: s.id, latLng: osm, source: "osm" as const };
+        }
         return { id: s.id, latLng: null, source: "failed" as const };
       }),
     );
