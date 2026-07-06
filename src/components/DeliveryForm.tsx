@@ -116,6 +116,7 @@ export function DeliveryForm({
     cepAbort.current = ctrl;
     setCepLoading(true);
     setCepError(null);
+    setCepData(null);
     lookupCep(digits, ctrl.signal)
       .then((r) => {
         if (ctrl.signal.aborted) return;
