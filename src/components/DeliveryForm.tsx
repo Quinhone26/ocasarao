@@ -252,6 +252,7 @@ export function DeliveryForm({
       agendadoPara: v.agendadoPara ? new Date(v.agendadoPara).toISOString() : null,
       lat: v.lat ?? null,
       lng: v.lng ?? null,
+      status: v.status || "pendente",
     });
   };
 
