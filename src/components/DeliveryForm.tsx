@@ -155,6 +155,7 @@ export function DeliveryForm({
           }
           return { ...p, ...filled };
         });
+        setCepData(d);
         if (!r.fromCache) {
           const kept =
             v.endereco.trim() || v.bairro.trim() || v.cidade.trim()
