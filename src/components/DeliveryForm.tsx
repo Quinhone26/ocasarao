@@ -178,6 +178,7 @@ export function DeliveryForm({
       runCepLookup(digits);
     } else if (digits.length < 8) {
       lastLookup.current = "";
+      setCepData(null);
     }
   };
 
