@@ -8,7 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import type { Delivery, DeliveryStatus } from "@/lib/deliveries";
 import { statusLabel } from "@/lib/deliveries";
+import type { CepResult } from "@/lib/cep";
 import { ALLOWED_CITY, ALLOWED_UF, formatCep, isAllowedCity, isValidCep, lookupCep, normalizeCep } from "@/lib/cep";
+
+function norm(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
 import { currencyMaskFromNumber, formatCurrencyFromDigits, formatPhone, parseCurrencyToNumber } from "@/lib/masks";
 
 export interface DeliveryFormValues {
