@@ -1,0 +1,204 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "none"
+  },
+  "mcp": {
+    "server": {
+      "name": "ocasarao-mcp",
+      "version": "0.1.0",
+      "title": "O Casarão — Entregas"
+    },
+    "tools": [
+      {
+        "name": "list_deliveries",
+        "title": "Listar entregas",
+        "description": "Lista as entregas cadastradas, opcionalmente filtradas por status. Retorna as mais recentes primeiro.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "status": {
+              "description": "Filtra por status da entrega.",
+              "type": "string",
+              "enum": [
+                "pendente",
+                "em_rota",
+                "entregue",
+                "cancelada"
+              ]
+            },
+            "limit": {
+              "description": "Máximo de entregas a retornar (padrão 50).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_delivery",
+        "title": "Buscar entrega",
+        "description": "Retorna todos os dados de uma entrega pelo seu ID.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "ID (UUID) da entrega."
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_delivery",
+        "title": "Criar entrega",
+        "description": "Cria uma nova entrega no sistema. Campos mínimos: cliente e endereço. Retorna a entrega criada.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "cliente": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Nome do cliente."
+            },
+            "endereco": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Rua/logradouro."
+            },
+            "numero": {
+              "description": "Número do imóvel.",
+              "type": "string"
+            },
+            "bairro": {
+              "type": "string"
+            },
+            "cidade": {
+              "description": "Padrão: Umuarama.",
+              "type": "string"
+            },
+            "cep": {
+              "description": "CEP no formato 00000-000.",
+              "type": "string"
+            },
+            "telefone": {
+              "type": "string"
+            },
+            "complemento": {
+              "type": "string"
+            },
+            "observacoes": {
+              "type": "string"
+            },
+            "valor": {
+              "description": "Valor da entrega em R$.",
+              "type": "number",
+              "minimum": 0
+            },
+            "agendadoPara": {
+              "description": "Data/hora ISO 8601 para entrega agendada.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "cliente",
+            "endereco"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_delivery_status",
+        "title": "Atualizar status da entrega",
+        "description": "Altera o status de uma entrega (pendente, em_rota, entregue, cancelada).",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "ID da entrega."
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pendente",
+                "em_rota",
+                "entregue",
+                "cancelada"
+              ],
+              "description": "Novo status."
+            }
+          },
+          "required": [
+            "id",
+            "status"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "delete_delivery",
+        "title": "Excluir entrega",
+        "description": "Remove uma entrega do sistema. Ação irreversível.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "ID da entrega a excluir."
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
