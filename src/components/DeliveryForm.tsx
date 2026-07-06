@@ -8,7 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import type { Delivery, DeliveryStatus } from "@/lib/deliveries";
 import { statusLabel } from "@/lib/deliveries";
+import type { CepResult } from "@/lib/cep";
 import { ALLOWED_CITY, ALLOWED_UF, formatCep, isAllowedCity, isValidCep, lookupCep, normalizeCep } from "@/lib/cep";
+
+function norm(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
 import { currencyMaskFromNumber, formatCurrencyFromDigits, formatPhone, parseCurrencyToNumber } from "@/lib/masks";
 
 export interface DeliveryFormValues {
@@ -71,6 +81,7 @@ export function DeliveryForm({
   }>(null);
   const cepAbort = useRef<AbortController | null>(null);
   const lastLookup = useRef<string>("");
+  const [cepData, setCepData] = useState<CepResult | null>(null);
 
   useEffect(() => {
     if (initial) {
@@ -105,6 +116,7 @@ export function DeliveryForm({
     cepAbort.current = ctrl;
     setCepLoading(true);
     setCepError(null);
+    setCepData(null);
     lookupCep(digits, ctrl.signal)
       .then((r) => {
         if (ctrl.signal.aborted) return;
@@ -143,6 +155,7 @@ export function DeliveryForm({
           }
           return { ...p, ...filled };
         });
+        setCepData(d);
         if (!r.fromCache) {
           const kept =
             v.endereco.trim() || v.bairro.trim() || v.cidade.trim()
@@ -165,6 +178,7 @@ export function DeliveryForm({
       runCepLookup(digits);
     } else if (digits.length < 8) {
       lastLookup.current = "";
+      setCepData(null);
     }
   };
 
@@ -382,6 +396,61 @@ export function DeliveryForm({
           <Input id="complemento" value={v.complemento} onChange={(e) => set("complemento", e.target.value)} maxLength={100} />
         </div>
       </div>
+      {(() => {
+        if (!cepData) return null;
+        const cepCidade = `${cepData.localidade}${cepData.uf ? "/" + cepData.uf : ""}`;
+        const diffs: { label: string; user: string; cep: string; key: "endereco" | "bairro" | "cidade" }[] = [];
+        if (cepData.logradouro && v.endereco.trim() && norm(v.endereco) !== norm(cepData.logradouro)) {
+          diffs.push({ label: "Rua", user: v.endereco, cep: cepData.logradouro, key: "endereco" });
+        }
+        if (cepData.bairro && v.bairro.trim() && norm(v.bairro) !== norm(cepData.bairro)) {
+          diffs.push({ label: "Bairro", user: v.bairro, cep: cepData.bairro, key: "bairro" });
+        }
+        if (cepData.localidade && v.cidade.trim() && norm(v.cidade).split("/")[0] !== norm(cepData.localidade)) {
+          diffs.push({ label: "Cidade", user: v.cidade, cep: cepCidade, key: "cidade" });
+        }
+        if (diffs.length === 0) return null;
+        const applyCep = () => {
+          setV((p) => ({
+            ...p,
+            endereco: cepData.logradouro || p.endereco,
+            bairro: cepData.bairro || p.bairro,
+            cidade: cepCidade || p.cidade,
+          }));
+          toast.success("Endereço substituído pelos dados do CEP");
+        };
+        return (
+          <div
+            role="alert"
+            className="space-y-2 rounded-lg border border-primary/40 bg-primary/10 p-3 text-sm"
+          >
+            <p className="font-medium text-primary">
+              O endereço digitado é diferente do que os Correios retornam para este CEP.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Ruas podem ter mudado de nome. Usar o endereço do CEP evita erros no mapa e no cálculo da rota.
+            </p>
+            <ul className="space-y-1 text-xs">
+              {diffs.map((d) => (
+                <li key={d.key} className="flex flex-wrap gap-x-2">
+                  <span className="font-medium">{d.label}:</span>
+                  <span className="text-muted-foreground line-through">{d.user}</span>
+                  <span aria-hidden>→</span>
+                  <span className="font-medium">{d.cep}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="flex gap-2 pt-1">
+              <Button type="button" size="sm" variant="default" onClick={applyCep}>
+                Usar endereço do CEP
+              </Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setCepData(null)}>
+                Manter o que digitei
+              </Button>
+            </div>
+          </div>
+        );
+      })()}
       <div className="space-y-2 rounded-lg border border-border p-3">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
