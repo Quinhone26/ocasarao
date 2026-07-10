@@ -14,6 +14,7 @@ export interface Cliente {
   lat: number | null;
   lng: number | null;
   entregas: number;
+  compras: number;
   totalValor: number;
   ultimaEntrega: string;
 }
