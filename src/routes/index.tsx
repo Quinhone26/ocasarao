@@ -342,7 +342,11 @@ function Index() {
       .map((d) => d.id);
     try {
       await Promise.all(ids.map((id) => remove(id)));
-      toast.success(`${target.cliente} · ${ids.length} ${ids.length === 1 ? "entrega removida" : "entregas removidas"}`);
+      removeStoredCliente(target.key);
+      const suf = ids.length === 0
+        ? "removido do cadastro"
+        : `${ids.length} ${ids.length === 1 ? "entrega removida" : "entregas removidas"}`;
+      toast.success(`${target.cliente} · ${suf}`);
     } catch {
       toast.error("Erro ao excluir cliente");
     }
@@ -365,6 +369,7 @@ function Index() {
           }),
         ),
       );
+      updateStoredCliente(updated.key, updated);
       toast.success("Cliente atualizado");
       setEditingCliente(undefined);
     } catch (err) {
