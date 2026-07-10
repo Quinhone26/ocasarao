@@ -638,7 +638,17 @@ function Index() {
   );
 }
 
-function ClienteCard({ c, onNew }: { c: Cliente; onNew: () => void }) {
+function ClienteCard({
+  c,
+  onNew,
+  onEdit,
+  onDelete,
+}: {
+  c: Cliente;
+  onNew: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
   const endereco = [c.endereco, c.numero].filter(Boolean).join(", ");
   const cidade = [c.bairro, c.cidade].filter(Boolean).join(" · ");
   return (
@@ -665,15 +675,105 @@ function ClienteCard({ c, onNew }: { c: Cliente; onNew: () => void }) {
           </span>
         </p>
       )}
-      <div className="flex items-center justify-between gap-3 pt-1">
+      <div className="flex items-center justify-between gap-2 pt-1">
         <span className="text-xs text-muted-foreground">
           Total: <span className="font-medium text-foreground">{formatBRL(c.totalValor)}</span>
         </span>
-        <Button size="sm" onClick={onNew} className="h-9 gap-1.5">
-          <Plus className="w-4 h-4" /> Nova entrega
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Button size="sm" variant="outline" onClick={onEdit} className="h-9 w-9 p-0" aria-label="Editar cliente">
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button size="sm" variant="outline" onClick={onDelete} className="h-9 w-9 p-0 text-destructive hover:text-destructive" aria-label="Excluir cliente">
+            <Trash2 className="w-4 h-4" />
+          </Button>
+          <Button size="sm" onClick={onNew} className="h-9 gap-1.5">
+            <Plus className="w-4 h-4" /> Nova entrega
+          </Button>
+        </div>
       </div>
     </div>
+  );
+}
+
+function ClienteEditForm({
+  initial,
+  onCancel,
+  onSave,
+}: {
+  initial: Cliente;
+  onCancel: () => void;
+  onSave: (c: Cliente) => void | Promise<void>;
+}) {
+  const [cliente, setCliente] = useState(initial.cliente);
+  const [telefone, setTelefone] = useState(initial.telefone);
+  const [cep, setCep] = useState(initial.cep);
+  const [endereco, setEndereco] = useState(initial.endereco);
+  const [numero, setNumero] = useState(initial.numero);
+  const [bairro, setBairro] = useState(initial.bairro);
+  const [cidade, setCidade] = useState(initial.cidade);
+  const [complemento, setComplemento] = useState(initial.complemento);
+  const [saving, setSaving] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cliente.trim() || !endereco.trim()) {
+      toast.error("Nome e endereço são obrigatórios");
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave({ ...initial, cliente: cliente.trim(), telefone: telefone.trim(), cep: cep.trim(), endereco: endereco.trim(), numero: numero.trim(), bairro: bairro.trim(), cidade: cidade.trim(), complemento: complemento.trim() });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-3">
+      <div className="space-y-1.5">
+        <Label htmlFor="ec-nome">Cliente *</Label>
+        <Input id="ec-nome" value={cliente} onChange={(e) => setCliente(e.target.value)} />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="ec-tel">Telefone</Label>
+        <Input id="ec-tel" value={telefone} onChange={(e) => setTelefone(e.target.value)} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="ec-cep">CEP</Label>
+          <Input id="ec-cep" value={cep} onChange={(e) => setCep(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="ec-num">Número</Label>
+          <Input id="ec-num" value={numero} onChange={(e) => setNumero(e.target.value)} />
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="ec-end">Endereço *</Label>
+        <Input id="ec-end" value={endereco} onChange={(e) => setEndereco(e.target.value)} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="ec-bairro">Bairro</Label>
+          <Input id="ec-bairro" value={bairro} onChange={(e) => setBairro(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="ec-cid">Cidade</Label>
+          <Input id="ec-cid" value={cidade} onChange={(e) => setCidade(e.target.value)} />
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="ec-comp">Complemento</Label>
+        <Input id="ec-comp" value={complemento} onChange={(e) => setComplemento(e.target.value)} />
+      </div>
+      <DialogFooter className="gap-2 pt-2">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>Cancelar</Button>
+        <Button type="submit" disabled={saving}>{saving ? "Salvando..." : "Salvar"}</Button>
+      </DialogFooter>
+      <p className="text-[11px] text-muted-foreground">
+        As alterações serão aplicadas a todas as entregas deste cliente.
+      </p>
+    </form>
   );
 }
 
