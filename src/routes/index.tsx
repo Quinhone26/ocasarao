@@ -388,9 +388,10 @@ function Index() {
           </section>
 
           <Tabs defaultValue="entregas" className="mt-5">
-            <TabsList className="grid w-full grid-cols-2 h-12">
-              <TabsTrigger value="entregas" className="gap-2 text-sm"><ClipboardList className="w-4 h-4" /> Entregas</TabsTrigger>
-              <TabsTrigger value="relatorios" className="gap-2 text-sm"><BarChart3 className="w-4 h-4" /> Relatórios</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 h-12">
+              <TabsTrigger value="entregas" className="gap-1.5 text-sm"><ClipboardList className="w-4 h-4" /> Entregas</TabsTrigger>
+              <TabsTrigger value="clientes" className="gap-1.5 text-sm"><Users className="w-4 h-4" /> Clientes</TabsTrigger>
+              <TabsTrigger value="relatorios" className="gap-1.5 text-sm"><BarChart3 className="w-4 h-4" /> Relatórios</TabsTrigger>
             </TabsList>
 
             <TabsContent value="entregas" className="mt-4 space-y-4">
