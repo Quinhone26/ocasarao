@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Search, Bike, BarChart3, ClipboardList, Route as RouteIcon, Users, Phone, MapPin } from "lucide-react";
+import { Plus, Search, Bike, BarChart3, ClipboardList, Route as RouteIcon, Users, Phone, MapPin, Pencil, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -11,7 +12,7 @@ import { DeliveryCard } from "@/components/DeliveryCard";
 import { DeliveryForm, type DeliveryFormValues } from "@/components/DeliveryForm";
 import type { Delivery, DeliveryStatus } from "@/lib/deliveries";
 import { useDeliveries, buildMapsUrl, formatBRL, statusLabel, distanceMeters } from "@/lib/deliveries";
-import { useClientes, type Cliente } from "@/lib/clientes";
+import { useClientes, clienteKey, type Cliente } from "@/lib/clientes";
 import { cn } from "@/lib/utils";
 import { InstallPrompt } from "@/components/InstallPrompt";
 
@@ -47,6 +48,8 @@ function Index() {
   const [prefill, setPrefill] = useState<Cliente | undefined>();
   const [clienteSearch, setClienteSearch] = useState("");
   const [deleting, setDeleting] = useState<Delivery | undefined>();
+  const [editingCliente, setEditingCliente] = useState<Cliente | undefined>();
+  const [deletingCliente, setDeletingCliente] = useState<Cliente | undefined>();
   const [arrivalPromptId, setArrivalPromptId] = useState<string | undefined>();
   const navigatedIdRef = useRef<string | undefined>(undefined);
   const navigatedAtRef = useRef<number>(0);
@@ -329,6 +332,47 @@ function Index() {
     }
   };
 
+  const confirmDeleteCliente = async () => {
+    if (!deletingCliente) return;
+    const target = deletingCliente;
+    setDeletingCliente(undefined);
+    const ids = items
+      .filter((d) => clienteKey(d.cliente, d.telefone) === target.key)
+      .map((d) => d.id);
+    try {
+      await Promise.all(ids.map((id) => remove(id)));
+      toast.success(`${target.cliente} · ${ids.length} ${ids.length === 1 ? "entrega removida" : "entregas removidas"}`);
+    } catch {
+      toast.error("Erro ao excluir cliente");
+    }
+  };
+
+  const saveCliente = async (updated: Cliente) => {
+    const targets = items.filter((d) => clienteKey(d.cliente, d.telefone) === updated.key);
+    try {
+      await Promise.all(
+        targets.map((d) =>
+          update(d.id, {
+            cliente: updated.cliente,
+            telefone: updated.telefone,
+            cep: updated.cep,
+            endereco: updated.endereco,
+            numero: updated.numero,
+            bairro: updated.bairro,
+            cidade: updated.cidade,
+            complemento: updated.complemento,
+          }),
+        ),
+      );
+      toast.success("Cliente atualizado");
+      setEditingCliente(undefined);
+    } catch (err) {
+      toast.error("Erro ao salvar cliente", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    }
+  };
+
   // Indicador de "offline" — apenas informativo. Inicializa como `true` para
   // evitar mismatch de hidratação (SSR sem navigator). O effect ajusta no client.
   const [online, setOnline] = useState(true);
@@ -469,7 +513,13 @@ function Index() {
               ) : (
                 <div className="space-y-2">
                   {filteredClientes.map((c) => (
-                    <ClienteCard key={c.key} c={c} onNew={() => openNewForCliente(c)} />
+                    <ClienteCard
+                      key={c.key}
+                      c={c}
+                      onNew={() => openNewForCliente(c)}
+                      onEdit={() => setEditingCliente(c)}
+                      onDelete={() => setDeletingCliente(c)}
+                    />
                   ))}
                 </div>
               )}
@@ -552,11 +602,53 @@ function Index() {
       </AlertDialog>
 
 
+      {/* Editar cliente */}
+      <Dialog open={!!editingCliente} onOpenChange={(o) => { if (!o) setEditingCliente(undefined); }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar cliente</DialogTitle>
+          </DialogHeader>
+          {editingCliente && (
+            <ClienteEditForm
+              initial={editingCliente}
+              onCancel={() => setEditingCliente(undefined)}
+              onSave={saveCliente}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Excluir cliente */}
+      <AlertDialog open={!!deletingCliente} onOpenChange={(o) => { if (!o) setDeletingCliente(undefined); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Todas as <strong>{deletingCliente?.entregas}</strong> entrega(s) de <strong>{deletingCliente?.cliente}</strong> serão removidas permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteCliente} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }
 
-function ClienteCard({ c, onNew }: { c: Cliente; onNew: () => void }) {
+function ClienteCard({
+  c,
+  onNew,
+  onEdit,
+  onDelete,
+}: {
+  c: Cliente;
+  onNew: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
   const endereco = [c.endereco, c.numero].filter(Boolean).join(", ");
   const cidade = [c.bairro, c.cidade].filter(Boolean).join(" · ");
   return (
@@ -583,15 +675,105 @@ function ClienteCard({ c, onNew }: { c: Cliente; onNew: () => void }) {
           </span>
         </p>
       )}
-      <div className="flex items-center justify-between gap-3 pt-1">
+      <div className="flex items-center justify-between gap-2 pt-1">
         <span className="text-xs text-muted-foreground">
           Total: <span className="font-medium text-foreground">{formatBRL(c.totalValor)}</span>
         </span>
-        <Button size="sm" onClick={onNew} className="h-9 gap-1.5">
-          <Plus className="w-4 h-4" /> Nova entrega
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Button size="sm" variant="outline" onClick={onEdit} className="h-9 w-9 p-0" aria-label="Editar cliente">
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button size="sm" variant="outline" onClick={onDelete} className="h-9 w-9 p-0 text-destructive hover:text-destructive" aria-label="Excluir cliente">
+            <Trash2 className="w-4 h-4" />
+          </Button>
+          <Button size="sm" onClick={onNew} className="h-9 gap-1.5">
+            <Plus className="w-4 h-4" /> Nova entrega
+          </Button>
+        </div>
       </div>
     </div>
+  );
+}
+
+function ClienteEditForm({
+  initial,
+  onCancel,
+  onSave,
+}: {
+  initial: Cliente;
+  onCancel: () => void;
+  onSave: (c: Cliente) => void | Promise<void>;
+}) {
+  const [cliente, setCliente] = useState(initial.cliente);
+  const [telefone, setTelefone] = useState(initial.telefone);
+  const [cep, setCep] = useState(initial.cep);
+  const [endereco, setEndereco] = useState(initial.endereco);
+  const [numero, setNumero] = useState(initial.numero);
+  const [bairro, setBairro] = useState(initial.bairro);
+  const [cidade, setCidade] = useState(initial.cidade);
+  const [complemento, setComplemento] = useState(initial.complemento);
+  const [saving, setSaving] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cliente.trim() || !endereco.trim()) {
+      toast.error("Nome e endereço são obrigatórios");
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave({ ...initial, cliente: cliente.trim(), telefone: telefone.trim(), cep: cep.trim(), endereco: endereco.trim(), numero: numero.trim(), bairro: bairro.trim(), cidade: cidade.trim(), complemento: complemento.trim() });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-3">
+      <div className="space-y-1.5">
+        <Label htmlFor="ec-nome">Cliente *</Label>
+        <Input id="ec-nome" value={cliente} onChange={(e) => setCliente(e.target.value)} />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="ec-tel">Telefone</Label>
+        <Input id="ec-tel" value={telefone} onChange={(e) => setTelefone(e.target.value)} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="ec-cep">CEP</Label>
+          <Input id="ec-cep" value={cep} onChange={(e) => setCep(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="ec-num">Número</Label>
+          <Input id="ec-num" value={numero} onChange={(e) => setNumero(e.target.value)} />
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="ec-end">Endereço *</Label>
+        <Input id="ec-end" value={endereco} onChange={(e) => setEndereco(e.target.value)} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="ec-bairro">Bairro</Label>
+          <Input id="ec-bairro" value={bairro} onChange={(e) => setBairro(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="ec-cid">Cidade</Label>
+          <Input id="ec-cid" value={cidade} onChange={(e) => setCidade(e.target.value)} />
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="ec-comp">Complemento</Label>
+        <Input id="ec-comp" value={complemento} onChange={(e) => setComplemento(e.target.value)} />
+      </div>
+      <DialogFooter className="gap-2 pt-2">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>Cancelar</Button>
+        <Button type="submit" disabled={saving}>{saving ? "Salvando..." : "Salvar"}</Button>
+      </DialogFooter>
+      <p className="text-[11px] text-muted-foreground">
+        As alterações serão aplicadas a todas as entregas deste cliente.
+      </p>
+    </form>
   );
 }
 
