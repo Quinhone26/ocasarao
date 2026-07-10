@@ -313,19 +313,41 @@ export function DeliveryForm({
     <form onSubmit={submit} className="space-y-4">
       <div className="space-y-1.5">
         <Label htmlFor="cliente">Cliente *</Label>
-        <Input id="cliente" value={v.cliente} onChange={(e) => set("cliente", e.target.value)} required maxLength={100} />
+        <div className="relative">
+          <Input
+            id="cliente"
+            value={v.cliente}
+            onChange={(e) => set("cliente", e.target.value)}
+            onFocus={() => setSuggestField("cliente")}
+            onBlur={() => window.setTimeout(() => setSuggestField(null), 150)}
+            required
+            maxLength={100}
+            autoComplete="off"
+          />
+          {suggestField === "cliente" && activeSuggestions.length > 0 && (
+            <ClienteSuggestions items={activeSuggestions} onPick={pickCliente} />
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="telefone">Telefone</Label>
-          <Input
-            id="telefone"
-            value={v.telefone}
-            onChange={(e) => set("telefone", formatPhone(e.target.value))}
-            inputMode="tel"
-            placeholder="(11) 91234-5678"
-            maxLength={16}
-          />
+          <div className="relative">
+            <Input
+              id="telefone"
+              value={v.telefone}
+              onChange={(e) => set("telefone", formatPhone(e.target.value))}
+              onFocus={() => setSuggestField("telefone")}
+              onBlur={() => window.setTimeout(() => setSuggestField(null), 150)}
+              inputMode="tel"
+              placeholder="(11) 91234-5678"
+              maxLength={16}
+              autoComplete="off"
+            />
+            {suggestField === "telefone" && activeSuggestions.length > 0 && (
+              <ClienteSuggestions items={activeSuggestions} onPick={pickCliente} />
+            )}
+          </div>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="valor">Valor</Label>
