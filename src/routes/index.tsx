@@ -521,12 +521,17 @@ function Index() {
       </div>
 
       {/* Form dialog */}
-      <Dialog open={formOpen} onOpenChange={(o) => { setFormOpen(o); if (!o) setEditing(undefined); }}>
+      <Dialog open={formOpen} onOpenChange={(o) => { setFormOpen(o); if (!o) { setEditing(undefined); setPrefill(undefined); } }}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editing ? "Editar entrega" : "Nova entrega"}</DialogTitle>
+            <DialogTitle>{editing ? "Editar entrega" : prefill ? `Nova entrega para ${prefill.cliente}` : "Nova entrega"}</DialogTitle>
           </DialogHeader>
-          <DeliveryForm initial={editing} onSubmit={handleSubmit} onCancel={() => { setFormOpen(false); setEditing(undefined); }} />
+          <DeliveryForm
+            initial={editing ?? prefillInitial}
+            suggestions={clientes}
+            onSubmit={handleSubmit}
+            onCancel={() => { setFormOpen(false); setEditing(undefined); setPrefill(undefined); }}
+          />
         </DialogContent>
       </Dialog>
 
