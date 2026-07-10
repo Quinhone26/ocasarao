@@ -152,6 +152,7 @@ function Index() {
         await create(v);
         toast.success("Entrega cadastrada");
       }
+      upsertClienteFromDelivery(v);
       setFormOpen(false);
       setEditing(undefined);
     } catch (err) {
