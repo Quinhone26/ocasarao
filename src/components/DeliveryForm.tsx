@@ -115,7 +115,31 @@ export function DeliveryForm({
   const set = <K extends keyof DeliveryFormValues>(k: K, val: DeliveryFormValues[K]) =>
     setV((p) => ({ ...p, [k]: val }));
 
-  const runCepLookup = (digits: string) => {
+  // Autocomplete de clientes já cadastrados (só em novo cadastro).
+  const [suggestField, setSuggestField] = useState<null | "cliente" | "telefone">(null);
+  const activeSuggestions = (() => {
+    if (initial || !suggestField) return [] as Cliente[];
+    const q = suggestField === "cliente" ? v.cliente : v.telefone;
+    return searchClientes(suggestions, q);
+  })();
+  const pickCliente = (c: Cliente) => {
+    setV((p) => ({
+      ...p,
+      cliente: c.cliente,
+      telefone: formatPhone(c.telefone),
+      cep: c.cep || p.cep,
+      endereco: c.endereco || p.endereco,
+      numero: c.numero || p.numero,
+      bairro: c.bairro || p.bairro,
+      cidade: c.cidade || p.cidade,
+      complemento: c.complemento || p.complemento,
+      lat: c.lat ?? p.lat,
+      lng: c.lng ?? p.lng,
+    }));
+    setSuggestField(null);
+    toast.success(`Dados de ${c.cliente} preenchidos`);
+  };
+
     cepAbort.current?.abort();
     const ctrl = new AbortController();
     cepAbort.current = ctrl;
