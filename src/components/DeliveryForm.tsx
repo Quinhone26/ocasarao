@@ -20,6 +20,7 @@ function norm(s: string): string {
     .toLowerCase();
 }
 import { currencyMaskFromNumber, formatCurrencyFromDigits, formatPhone, parseCurrencyToNumber } from "@/lib/masks";
+import { searchClientes, type Cliente } from "@/lib/clientes";
 
 export interface DeliveryFormValues {
   cliente: string;
