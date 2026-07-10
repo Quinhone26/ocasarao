@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Search, Bike, BarChart3, ClipboardList, Route as RouteIcon } from "lucide-react";
+import { Plus, Search, Bike, BarChart3, ClipboardList, Route as RouteIcon, Users, Phone, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -11,6 +11,7 @@ import { DeliveryCard } from "@/components/DeliveryCard";
 import { DeliveryForm, type DeliveryFormValues } from "@/components/DeliveryForm";
 import type { Delivery, DeliveryStatus } from "@/lib/deliveries";
 import { useDeliveries, buildMapsUrl, formatBRL, statusLabel, distanceMeters } from "@/lib/deliveries";
+import { useClientes, type Cliente } from "@/lib/clientes";
 import { cn } from "@/lib/utils";
 import { InstallPrompt } from "@/components/InstallPrompt";
 
@@ -38,10 +39,13 @@ type Filter = "todas" | DeliveryStatus;
 
 function Index() {
   const { items, create, update, remove } = useDeliveries();
+  const clientes = useClientes(items);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("todas");
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Delivery | undefined>();
+  const [prefill, setPrefill] = useState<Cliente | undefined>();
+  const [clienteSearch, setClienteSearch] = useState("");
   const [deleting, setDeleting] = useState<Delivery | undefined>();
   const [arrivalPromptId, setArrivalPromptId] = useState<string | undefined>();
   const navigatedIdRef = useRef<string | undefined>(undefined);
@@ -95,8 +99,46 @@ function Index() {
     });
   }, [items, search, filter]);
 
-  const openNew = () => { setEditing(undefined); setFormOpen(true); };
-  const openEdit = (d: Delivery) => { setEditing(d); setFormOpen(true); };
+  const openNew = () => { setEditing(undefined); setPrefill(undefined); setFormOpen(true); };
+  const openEdit = (d: Delivery) => { setEditing(d); setPrefill(undefined); setFormOpen(true); };
+  const openNewForCliente = (c: Cliente) => { setEditing(undefined); setPrefill(c); setFormOpen(true); };
+
+  const filteredClientes = useMemo(() => {
+    const q = clienteSearch.trim().toLowerCase();
+    if (!q) return clientes;
+    return clientes.filter(
+      (c) =>
+        c.cliente.toLowerCase().includes(q) ||
+        c.telefone.toLowerCase().includes(q) ||
+        c.endereco.toLowerCase().includes(q) ||
+        c.bairro.toLowerCase().includes(q),
+    );
+  }, [clientes, clienteSearch]);
+
+  // "initial" sintético para pré-preencher o form a partir de um cliente escolhido.
+  const prefillInitial: Delivery | undefined = useMemo(() => {
+    if (!prefill) return undefined;
+    return {
+      id: "",
+      cliente: prefill.cliente,
+      telefone: prefill.telefone,
+      cep: prefill.cep,
+      endereco: prefill.endereco,
+      numero: prefill.numero,
+      bairro: prefill.bairro,
+      cidade: prefill.cidade,
+      complemento: prefill.complemento,
+      observacoes: "",
+      valor: 0,
+      dataHora: new Date().toISOString(),
+      agendadoPara: null,
+      lat: prefill.lat,
+      lng: prefill.lng,
+      status: "pendente",
+      criadoEm: new Date().toISOString(),
+    };
+  }, [prefill]);
+
 
   const handleSubmit = async (v: DeliveryFormValues) => {
     try {
@@ -346,9 +388,10 @@ function Index() {
           </section>
 
           <Tabs defaultValue="entregas" className="mt-5">
-            <TabsList className="grid w-full grid-cols-2 h-12">
-              <TabsTrigger value="entregas" className="gap-2 text-sm"><ClipboardList className="w-4 h-4" /> Entregas</TabsTrigger>
-              <TabsTrigger value="relatorios" className="gap-2 text-sm"><BarChart3 className="w-4 h-4" /> Relatórios</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 h-12">
+              <TabsTrigger value="entregas" className="gap-1.5 text-sm"><ClipboardList className="w-4 h-4" /> Entregas</TabsTrigger>
+              <TabsTrigger value="clientes" className="gap-1.5 text-sm"><Users className="w-4 h-4" /> Clientes</TabsTrigger>
+              <TabsTrigger value="relatorios" className="gap-1.5 text-sm"><BarChart3 className="w-4 h-4" /> Relatórios</TabsTrigger>
             </TabsList>
 
             <TabsContent value="entregas" className="mt-4 space-y-4">
@@ -404,7 +447,36 @@ function Index() {
               )}
             </TabsContent>
 
+            <TabsContent value="clientes" className="mt-4 space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  value={clienteSearch}
+                  onChange={(e) => setClienteSearch(e.target.value)}
+                  placeholder="Buscar por nome, telefone ou endereço"
+                  className="pl-9 h-12 bg-card"
+                />
+              </div>
+              {filteredClientes.length === 0 ? (
+                <div className="text-center py-16 text-muted-foreground">
+                  <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                  <p className="text-sm">
+                    {clientes.length === 0
+                      ? "Nenhum cliente ainda. Cadastre uma entrega para começar."
+                      : "Nenhum cliente encontrado."}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredClientes.map((c) => (
+                    <ClienteCard key={c.key} c={c} onNew={() => openNewForCliente(c)} />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
             <TabsContent value="relatorios" className="mt-4 space-y-3">
+
               <div className="rounded-2xl bg-card shadow-card border p-5">
                 <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Hoje</p>
                 <div className="mt-3 grid grid-cols-2 gap-4">
@@ -449,12 +521,17 @@ function Index() {
       </div>
 
       {/* Form dialog */}
-      <Dialog open={formOpen} onOpenChange={(o) => { setFormOpen(o); if (!o) setEditing(undefined); }}>
+      <Dialog open={formOpen} onOpenChange={(o) => { setFormOpen(o); if (!o) { setEditing(undefined); setPrefill(undefined); } }}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editing ? "Editar entrega" : "Nova entrega"}</DialogTitle>
+            <DialogTitle>{editing ? "Editar entrega" : prefill ? `Nova entrega para ${prefill.cliente}` : "Nova entrega"}</DialogTitle>
           </DialogHeader>
-          <DeliveryForm initial={editing} onSubmit={handleSubmit} onCancel={() => { setFormOpen(false); setEditing(undefined); }} />
+          <DeliveryForm
+            initial={editing ?? prefillInitial}
+            suggestions={clientes}
+            onSubmit={handleSubmit}
+            onCancel={() => { setFormOpen(false); setEditing(undefined); setPrefill(undefined); }}
+          />
         </DialogContent>
       </Dialog>
 
@@ -475,6 +552,45 @@ function Index() {
       </AlertDialog>
 
 
+    </div>
+  );
+}
+
+function ClienteCard({ c, onNew }: { c: Cliente; onNew: () => void }) {
+  const endereco = [c.endereco, c.numero].filter(Boolean).join(", ");
+  const cidade = [c.bairro, c.cidade].filter(Boolean).join(" · ");
+  return (
+    <div className="rounded-2xl bg-card shadow-card border p-4 flex flex-col gap-2">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-semibold truncate">{c.cliente}</p>
+          {c.telefone && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Phone className="w-3 h-3" /> {c.telefone}
+            </p>
+          )}
+        </div>
+        <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide bg-primary/10 text-primary rounded-full px-2 py-1">
+          {c.entregas} {c.entregas === 1 ? "entrega" : "entregas"}
+        </span>
+      </div>
+      {endereco && (
+        <p className="text-sm text-foreground/80 flex items-start gap-1.5">
+          <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
+          <span className="min-w-0">
+            {endereco}
+            {cidade && <span className="block text-xs text-muted-foreground">{cidade}</span>}
+          </span>
+        </p>
+      )}
+      <div className="flex items-center justify-between gap-3 pt-1">
+        <span className="text-xs text-muted-foreground">
+          Total: <span className="font-medium text-foreground">{formatBRL(c.totalValor)}</span>
+        </span>
+        <Button size="sm" onClick={onNew} className="h-9 gap-1.5">
+          <Plus className="w-4 h-4" /> Nova entrega
+        </Button>
+      </div>
     </div>
   );
 }

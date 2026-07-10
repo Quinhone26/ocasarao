@@ -20,6 +20,7 @@ function norm(s: string): string {
     .toLowerCase();
 }
 import { currencyMaskFromNumber, formatCurrencyFromDigits, formatPhone, parseCurrencyToNumber } from "@/lib/masks";
+import { searchClientes, type Cliente } from "@/lib/clientes";
 
 export interface DeliveryFormValues {
   cliente: string;
@@ -66,10 +67,12 @@ const empty: DeliveryFormValues = {
 
 export function DeliveryForm({
   initial,
+  suggestions = [],
   onSubmit,
   onCancel,
 }: {
   initial?: Delivery;
+  suggestions?: Cliente[];
   onSubmit: (v: DeliveryFormValues) => void;
   onCancel: () => void;
 }) {
@@ -111,6 +114,31 @@ export function DeliveryForm({
 
   const set = <K extends keyof DeliveryFormValues>(k: K, val: DeliveryFormValues[K]) =>
     setV((p) => ({ ...p, [k]: val }));
+
+  // Autocomplete de clientes já cadastrados (só em novo cadastro).
+  const [suggestField, setSuggestField] = useState<null | "cliente" | "telefone">(null);
+  const activeSuggestions = (() => {
+    if (initial || !suggestField) return [] as Cliente[];
+    const q = suggestField === "cliente" ? v.cliente : v.telefone;
+    return searchClientes(suggestions, q);
+  })();
+  const pickCliente = (c: Cliente) => {
+    setV((p) => ({
+      ...p,
+      cliente: c.cliente,
+      telefone: formatPhone(c.telefone),
+      cep: c.cep || p.cep,
+      endereco: c.endereco || p.endereco,
+      numero: c.numero || p.numero,
+      bairro: c.bairro || p.bairro,
+      cidade: c.cidade || p.cidade,
+      complemento: c.complemento || p.complemento,
+      lat: c.lat ?? p.lat,
+      lng: c.lng ?? p.lng,
+    }));
+    setSuggestField(null);
+    toast.success(`Dados de ${c.cliente} preenchidos`);
+  };
 
   const runCepLookup = (digits: string) => {
     cepAbort.current?.abort();
@@ -285,19 +313,41 @@ export function DeliveryForm({
     <form onSubmit={submit} className="space-y-4">
       <div className="space-y-1.5">
         <Label htmlFor="cliente">Cliente *</Label>
-        <Input id="cliente" value={v.cliente} onChange={(e) => set("cliente", e.target.value)} required maxLength={100} />
+        <div className="relative">
+          <Input
+            id="cliente"
+            value={v.cliente}
+            onChange={(e) => set("cliente", e.target.value)}
+            onFocus={() => setSuggestField("cliente")}
+            onBlur={() => window.setTimeout(() => setSuggestField(null), 150)}
+            required
+            maxLength={100}
+            autoComplete="off"
+          />
+          {suggestField === "cliente" && activeSuggestions.length > 0 && (
+            <ClienteSuggestions items={activeSuggestions} onPick={pickCliente} />
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="telefone">Telefone</Label>
-          <Input
-            id="telefone"
-            value={v.telefone}
-            onChange={(e) => set("telefone", formatPhone(e.target.value))}
-            inputMode="tel"
-            placeholder="(11) 91234-5678"
-            maxLength={16}
-          />
+          <div className="relative">
+            <Input
+              id="telefone"
+              value={v.telefone}
+              onChange={(e) => set("telefone", formatPhone(e.target.value))}
+              onFocus={() => setSuggestField("telefone")}
+              onBlur={() => window.setTimeout(() => setSuggestField(null), 150)}
+              inputMode="tel"
+              placeholder="(11) 91234-5678"
+              maxLength={16}
+              autoComplete="off"
+            />
+            {suggestField === "telefone" && activeSuggestions.length > 0 && (
+              <ClienteSuggestions items={activeSuggestions} onPick={pickCliente} />
+            )}
+          </div>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="valor">Valor</Label>
@@ -564,3 +614,34 @@ export function DeliveryForm({
     </form>
   );
 }
+
+function ClienteSuggestions({ items, onPick }: { items: Cliente[]; onPick: (c: Cliente) => void }) {
+  return (
+    <ul
+      role="listbox"
+      className="absolute z-30 mt-1 w-full max-h-64 overflow-auto rounded-md border border-border bg-popover shadow-elevated"
+    >
+      {items.map((c) => (
+        <li key={c.key}>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onPick(c)}
+            className="w-full text-left px-3 py-2 hover:bg-muted focus:bg-muted focus:outline-none"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-medium text-sm truncate">{c.cliente}</span>
+              <span className="text-[11px] shrink-0 text-muted-foreground">
+                {c.entregas}× {c.telefone ? "· " + c.telefone : ""}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground truncate">
+              {[c.endereco, c.numero, c.bairro].filter(Boolean).join(", ")}
+            </p>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
