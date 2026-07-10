@@ -12,7 +12,7 @@ import { DeliveryCard } from "@/components/DeliveryCard";
 import { DeliveryForm, type DeliveryFormValues } from "@/components/DeliveryForm";
 import type { Delivery, DeliveryStatus } from "@/lib/deliveries";
 import { useDeliveries, buildMapsUrl, formatBRL, statusLabel, distanceMeters } from "@/lib/deliveries";
-import { useClientes, clienteKey, type Cliente } from "@/lib/clientes";
+import { useClientes, clienteKey, upsertClienteFromDelivery, updateStoredCliente, removeStoredCliente, type Cliente } from "@/lib/clientes";
 import { cn } from "@/lib/utils";
 import { InstallPrompt } from "@/components/InstallPrompt";
 
