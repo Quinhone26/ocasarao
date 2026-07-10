@@ -14,6 +14,7 @@ export interface Cliente {
   lat: number | null;
   lng: number | null;
   entregas: number;
+  compras: number;
   totalValor: number;
   ultimaEntrega: string;
 }
@@ -50,6 +51,7 @@ export function aggregateClientes(items: Delivery[]): Cliente[] {
     const cur = map.get(key);
     if (cur) {
       cur.entregas++;
+      if (d.status === "entregue") cur.compras++;
       cur.totalValor += d.valor || 0;
       // Preenche campos que a entrega mais antiga tinha e a nova não trouxe.
       if (!cur.telefone && d.telefone) cur.telefone = d.telefone;
@@ -74,6 +76,7 @@ export function aggregateClientes(items: Delivery[]): Cliente[] {
         lat: d.lat ?? null,
         lng: d.lng ?? null,
         entregas: 1,
+        compras: d.status === "entregue" ? 1 : 0,
         totalValor: d.valor || 0,
         ultimaEntrega: d.dataHora,
       });

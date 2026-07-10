@@ -662,9 +662,16 @@ function ClienteCard({
             </p>
           )}
         </div>
-        <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide bg-primary/10 text-primary rounded-full px-2 py-1">
-          {c.entregas} {c.entregas === 1 ? "entrega" : "entregas"}
-        </span>
+        <div className="shrink-0 flex flex-col items-end gap-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wide bg-primary/10 text-primary rounded-full px-2 py-1">
+            {c.compras} {c.compras === 1 ? "compra" : "compras"}
+          </span>
+          {c.entregas !== c.compras && (
+            <span className="text-[10px] text-muted-foreground">
+              {c.entregas} {c.entregas === 1 ? "entrega" : "entregas"}
+            </span>
+          )}
+        </div>
       </div>
       {endereco && (
         <p className="text-sm text-foreground/80 flex items-start gap-1.5">
