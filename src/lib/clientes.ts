@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import type { Delivery } from "@/lib/deliveries";
 
 export interface Cliente {
@@ -18,6 +19,25 @@ export interface Cliente {
   totalValor: number;
   ultimaEntrega: string;
 }
+
+type StoredCliente = Omit<
+  Cliente,
+  "entregas" | "compras" | "totalValor" | "ultimaEntrega"
+>;
+
+type ClienteRow = {
+  key: string;
+  cliente: string;
+  telefone: string | null;
+  cep: string | null;
+  endereco: string | null;
+  numero: string | null;
+  bairro: string | null;
+  cidade: string | null;
+  complemento: string | null;
+  lat: number | null;
+  lng: number | null;
+};
 
 function normPhone(t: string): string {
   return (t ?? "").replace(/\D/g, "");
@@ -40,68 +60,117 @@ export function clienteKey(cliente: string, telefone: string): string {
   return n ? `n:${n}` : "";
 }
 
-// ---------- Persistência local do cadastro de clientes ----------
-// Clientes são um "banco" próprio: sobrevivem à exclusão de entregas.
-// As contagens (entregas/compras/totalValor/ultimaEntrega) continuam
-// derivadas em tempo real das entregas atuais.
+// ---------- Cache local + store em memória com sync Supabase ----------
 
-const STORE_KEY = "motoboy_clientes_store_v1";
+const CACHE_KEY = "motoboy_clientes_store_v2";
 
-type StoredCliente = Omit<
-  Cliente,
-  "entregas" | "compras" | "totalValor" | "ultimaEntrega"
->;
+function fromRow(r: ClienteRow): StoredCliente {
+  return {
+    key: r.key,
+    cliente: r.cliente ?? "",
+    telefone: r.telefone ?? "",
+    cep: r.cep ?? "",
+    endereco: r.endereco ?? "",
+    numero: r.numero ?? "",
+    bairro: r.bairro ?? "",
+    cidade: r.cidade ?? "",
+    complemento: r.complemento ?? "",
+    lat: r.lat,
+    lng: r.lng,
+  };
+}
 
-function readStore(): StoredCliente[] {
+function toRow(c: StoredCliente): ClienteRow {
+  return {
+    key: c.key,
+    cliente: c.cliente,
+    telefone: c.telefone || "",
+    cep: c.cep || "",
+    endereco: c.endereco || "",
+    numero: c.numero || "",
+    bairro: c.bairro || "",
+    cidade: c.cidade || "",
+    complemento: c.complemento || "",
+    lat: c.lat,
+    lng: c.lng,
+  };
+}
+
+function readCache(): StoredCliente[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(STORE_KEY);
+    const raw = window.localStorage.getItem(CACHE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed as StoredCliente[];
+    return Array.isArray(parsed) ? (parsed as StoredCliente[]) : [];
   } catch {
     return [];
   }
 }
 
-function writeStore(list: StoredCliente[]) {
+function writeCache(list: StoredCliente[]) {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(STORE_KEY, JSON.stringify(list));
+    window.localStorage.setItem(CACHE_KEY, JSON.stringify(list));
   } catch {
     /* quota indisponível */
   }
+}
+
+let memoryStore: StoredCliente[] = readCache();
+const subscribers = new Set<() => void>();
+let realtimeStarted = false;
+
+function setStore(next: StoredCliente[]) {
+  memoryStore = next;
+  writeCache(next);
   for (const cb of subscribers) cb();
 }
 
-const subscribers = new Set<() => void>();
-function subscribe(cb: () => void): () => void {
-  subscribers.add(cb);
-  return () => {
-    subscribers.delete(cb);
-  };
+function upsertLocal(c: StoredCliente) {
+  const idx = memoryStore.findIndex((x) => x.key === c.key);
+  const next = memoryStore.slice();
+  if (idx === -1) next.push(c);
+  else next[idx] = { ...next[idx], ...c };
+  setStore(next);
 }
 
-function toStored(c: Cliente | StoredCliente): StoredCliente {
-  return {
-    key: c.key,
-    cliente: c.cliente,
-    telefone: c.telefone ?? "",
-    cep: c.cep ?? "",
-    endereco: c.endereco ?? "",
-    numero: c.numero ?? "",
-    bairro: c.bairro ?? "",
-    cidade: c.cidade ?? "",
-    complemento: c.complemento ?? "",
-    lat: c.lat ?? null,
-    lng: c.lng ?? null,
-  };
+function removeLocal(key: string) {
+  setStore(memoryStore.filter((x) => x.key !== key));
 }
 
-// Insere/atualiza cliente com base em uma entrega recém-criada/editada.
-// Preserva campos já cadastrados quando a entrega não os traz.
-export function upsertClienteFromDelivery(d: {
+async function loadFromSupabase() {
+  const { data, error } = await supabase.from("clientes").select("*");
+  if (error) {
+    console.error("[clientes] load error", error);
+    return;
+  }
+  setStore((data as ClienteRow[]).map(fromRow));
+}
+
+function startRealtime() {
+  if (realtimeStarted) return;
+  realtimeStarted = true;
+  loadFromSupabase();
+  supabase
+    .channel("clientes-changes")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "clientes" },
+      (payload) => {
+        if (payload.eventType === "DELETE" && payload.old) {
+          removeLocal((payload.old as ClienteRow).key);
+        } else if (payload.new) {
+          upsertLocal(fromRow(payload.new as ClienteRow));
+        }
+      },
+    )
+    .subscribe();
+}
+
+// ---------- API pública ----------
+
+export async function upsertClienteFromDelivery(d: {
   cliente: string;
   telefone: string;
   cep?: string;
@@ -115,69 +184,68 @@ export function upsertClienteFromDelivery(d: {
 }) {
   const key = clienteKey(d.cliente, d.telefone);
   if (!key) return;
-  const list = readStore();
-  const idx = list.findIndex((x) => x.key === key);
-  if (idx === -1) {
-    list.push(
-      toStored({
-        key,
-        cliente: d.cliente,
-        telefone: d.telefone ?? "",
-        cep: d.cep ?? "",
-        endereco: d.endereco ?? "",
-        numero: d.numero ?? "",
-        bairro: d.bairro ?? "",
-        cidade: d.cidade ?? "",
-        complemento: d.complemento ?? "",
-        lat: d.lat ?? null,
-        lng: d.lng ?? null,
-      }),
-    );
-  } else {
-    const cur = list[idx];
-    list[idx] = {
-      ...cur,
-      cliente: d.cliente || cur.cliente,
-      telefone: d.telefone || cur.telefone,
-      cep: d.cep || cur.cep,
-      endereco: d.endereco || cur.endereco,
-      numero: d.numero || cur.numero,
-      bairro: d.bairro || cur.bairro,
-      cidade: d.cidade || cur.cidade,
-      complemento: d.complemento || cur.complemento,
-      lat: d.lat ?? cur.lat,
-      lng: d.lng ?? cur.lng,
-    };
-  }
-  writeStore(list);
+  const prev = memoryStore.find((x) => x.key === key);
+  // Mescla com o que já existe pra não sobrescrever campos com string vazia.
+  const merged: StoredCliente = {
+    key,
+    cliente: d.cliente || prev?.cliente || "",
+    telefone: d.telefone || prev?.telefone || "",
+    cep: d.cep || prev?.cep || "",
+    endereco: d.endereco || prev?.endereco || "",
+    numero: d.numero || prev?.numero || "",
+    bairro: d.bairro || prev?.bairro || "",
+    cidade: d.cidade || prev?.cidade || "",
+    complemento: d.complemento || prev?.complemento || "",
+    lat: d.lat ?? prev?.lat ?? null,
+    lng: d.lng ?? prev?.lng ?? null,
+  };
+  upsertLocal(merged);
+  const { error } = await supabase.from("clientes").upsert(toRow(merged));
+  if (error) console.error("[clientes] upsert error", error);
 }
 
-// Atualiza um cliente já cadastrado. Se a chave mudar (telefone/nome), reindexa.
-export function updateStoredCliente(prevKey: string, updated: Cliente) {
-  const list = readStore();
-  const idx = list.findIndex((x) => x.key === prevKey);
+export async function updateStoredCliente(prevKey: string, updated: Cliente) {
   const nextKey = clienteKey(updated.cliente, updated.telefone) || prevKey;
-  const next = toStored({ ...updated, key: nextKey });
-  if (idx === -1) list.push(next);
-  else list[idx] = next;
-  writeStore(list);
+  const next: StoredCliente = {
+    key: nextKey,
+    cliente: updated.cliente,
+    telefone: updated.telefone,
+    cep: updated.cep,
+    endereco: updated.endereco,
+    numero: updated.numero,
+    bairro: updated.bairro,
+    cidade: updated.cidade,
+    complemento: updated.complemento,
+    lat: updated.lat,
+    lng: updated.lng,
+  };
+  if (nextKey !== prevKey) removeLocal(prevKey);
+  upsertLocal(next);
+  if (nextKey !== prevKey) {
+    const { error: delErr } = await supabase
+      .from("clientes")
+      .delete()
+      .eq("key", prevKey);
+    if (delErr) console.error("[clientes] rename delete error", delErr);
+  }
+  const { error } = await supabase.from("clientes").upsert(toRow(next));
+  if (error) console.error("[clientes] update error", error);
 }
 
-export function removeStoredCliente(key: string) {
-  const list = readStore().filter((x) => x.key !== key);
-  writeStore(list);
+export async function removeStoredCliente(key: string) {
+  removeLocal(key);
+  const { error } = await supabase.from("clientes").delete().eq("key", key);
+  if (error) console.error("[clientes] delete error", error);
 }
 
-// ---------- Agregação (store + entregas) ----------
+// ---------- Agregação ----------
 
 export function aggregateClientes(
   items: Delivery[],
-  stored: StoredCliente[] = readStore(),
+  stored: StoredCliente[] = memoryStore,
 ): Cliente[] {
   const map = new Map<string, Cliente>();
 
-  // 1) Semeia a partir do cadastro persistido — garante que clientes sem
-  //    entregas ativas continuem aparecendo.
   for (const s of stored) {
     if (!s.key) continue;
     map.set(s.key, {
@@ -189,7 +257,6 @@ export function aggregateClientes(
     });
   }
 
-  // 2) Percorre entregas (mais recentes primeiro) atualizando contagens.
   const sorted = [...items].sort(
     (a, b) => new Date(b.dataHora).getTime() - new Date(a.dataHora).getTime(),
   );
@@ -202,7 +269,6 @@ export function aggregateClientes(
       if (d.status === "entregue") cur.compras++;
       cur.totalValor += d.valor || 0;
       if (!cur.ultimaEntrega) cur.ultimaEntrega = d.dataHora;
-      // Preenche campos ausentes no cadastro com dados da entrega.
       if (!cur.telefone && d.telefone) cur.telefone = d.telefone;
       if (!cur.cep && d.cep) cur.cep = d.cep;
       if (!cur.endereco && d.endereco) cur.endereco = d.endereco;
@@ -242,38 +308,29 @@ export function aggregateClientes(
 }
 
 export function useClientes(items: Delivery[]): Cliente[] {
-  const [stored, setStored] = useState<StoredCliente[]>(() => readStore());
-  useEffect(() => subscribe(() => setStored(readStore())), []);
+  const [stored, setStored] = useState<StoredCliente[]>(() => memoryStore);
 
-  // Semeia o cadastro com clientes já existentes nas entregas na primeira carga
-  // — evita perder clientes de bases antigas quando ainda não há store.
+  useEffect(() => {
+    startRealtime();
+    const cb = () => setStored(memoryStore);
+    subscribers.add(cb);
+    cb();
+    return () => {
+      subscribers.delete(cb);
+    };
+  }, []);
+
+  // Semeia o cadastro no Supabase com clientes que só existem nas entregas —
+  // roda uma vez por chave desconhecida.
   useEffect(() => {
     if (items.length === 0) return;
-    const list = readStore();
-    const known = new Set(list.map((x) => x.key));
-    let changed = false;
+    const known = new Set(memoryStore.map((x) => x.key));
     for (const d of items) {
       const key = clienteKey(d.cliente, d.telefone);
       if (!key || known.has(key)) continue;
       known.add(key);
-      list.push(
-        toStored({
-          key,
-          cliente: d.cliente,
-          telefone: d.telefone ?? "",
-          cep: d.cep ?? "",
-          endereco: d.endereco ?? "",
-          numero: d.numero ?? "",
-          bairro: d.bairro ?? "",
-          cidade: d.cidade ?? "",
-          complemento: d.complemento ?? "",
-          lat: d.lat ?? null,
-          lng: d.lng ?? null,
-        }),
-      );
-      changed = true;
+      upsertClienteFromDelivery(d);
     }
-    if (changed) writeStore(list);
   }, [items]);
 
   return useMemo(() => aggregateClientes(items, stored), [items, stored]);
