@@ -614,3 +614,34 @@ export function DeliveryForm({
     </form>
   );
 }
+
+function ClienteSuggestions({ items, onPick }: { items: Cliente[]; onPick: (c: Cliente) => void }) {
+  return (
+    <ul
+      role="listbox"
+      className="absolute z-30 mt-1 w-full max-h-64 overflow-auto rounded-md border border-border bg-popover shadow-elevated"
+    >
+      {items.map((c) => (
+        <li key={c.key}>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onPick(c)}
+            className="w-full text-left px-3 py-2 hover:bg-muted focus:bg-muted focus:outline-none"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-medium text-sm truncate">{c.cliente}</span>
+              <span className="text-[11px] shrink-0 text-muted-foreground">
+                {c.entregas}× {c.telefone ? "· " + c.telefone : ""}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground truncate">
+              {[c.endereco, c.numero, c.bairro].filter(Boolean).join(", ")}
+            </p>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
