@@ -602,6 +602,38 @@ function Index() {
       </AlertDialog>
 
 
+      {/* Editar cliente */}
+      <Dialog open={!!editingCliente} onOpenChange={(o) => { if (!o) setEditingCliente(undefined); }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar cliente</DialogTitle>
+          </DialogHeader>
+          {editingCliente && (
+            <ClienteEditForm
+              initial={editingCliente}
+              onCancel={() => setEditingCliente(undefined)}
+              onSave={saveCliente}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Excluir cliente */}
+      <AlertDialog open={!!deletingCliente} onOpenChange={(o) => { if (!o) setDeletingCliente(undefined); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Todas as <strong>{deletingCliente?.entregas}</strong> entrega(s) de <strong>{deletingCliente?.cliente}</strong> serão removidas permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteCliente} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }
