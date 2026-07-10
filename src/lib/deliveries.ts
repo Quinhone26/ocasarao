@@ -303,6 +303,13 @@ export const statusLabel: Record<DeliveryStatus, string> = {
 };
 
 export function buildMapsUrl(d: Delivery) {
+  // URL universal do Google Maps: no Android e iPhone, abre direto o app
+  // do Google Maps se instalado; senão, cai no navegador.
+  // Prioriza lat/lng quando salvos — mais preciso que geocodificar o texto.
+  const base = "https://www.google.com/maps/dir/?api=1&travelmode=driving";
+  if (d.lat != null && d.lng != null) {
+    return `${base}&destination=${d.lat},${d.lng}`;
+  }
   const parts = [
     `${d.endereco}${d.numero ? ", " + d.numero : ""}`,
     d.bairro,
@@ -310,9 +317,7 @@ export function buildMapsUrl(d: Delivery) {
   ]
     .filter(Boolean)
     .join(", ");
-  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-    parts,
-  )}&travelmode=driving`;
+  return `${base}&destination=${encodeURIComponent(parts)}`;
 }
 
 export function formatBRL(v: number) {
