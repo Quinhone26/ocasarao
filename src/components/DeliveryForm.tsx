@@ -67,10 +67,12 @@ const empty: DeliveryFormValues = {
 
 export function DeliveryForm({
   initial,
+  suggestions = [],
   onSubmit,
   onCancel,
 }: {
   initial?: Delivery;
+  suggestions?: Cliente[];
   onSubmit: (v: DeliveryFormValues) => void;
   onCancel: () => void;
 }) {
