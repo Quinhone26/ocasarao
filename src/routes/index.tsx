@@ -12,7 +12,7 @@ import { DeliveryCard } from "@/components/DeliveryCard";
 import { DeliveryForm, type DeliveryFormValues } from "@/components/DeliveryForm";
 import type { Delivery, DeliveryStatus } from "@/lib/deliveries";
 import { useDeliveries, buildMapsUrl, formatBRL, statusLabel, distanceMeters } from "@/lib/deliveries";
-import { useClientes, clienteKey, type Cliente } from "@/lib/clientes";
+import { useClientes, clienteKey, upsertClienteFromDelivery, updateStoredCliente, removeStoredCliente, type Cliente } from "@/lib/clientes";
 import { cn } from "@/lib/utils";
 import { InstallPrompt } from "@/components/InstallPrompt";
 
@@ -152,6 +152,7 @@ function Index() {
         await create(v);
         toast.success("Entrega cadastrada");
       }
+      upsertClienteFromDelivery(v);
       setFormOpen(false);
       setEditing(undefined);
     } catch (err) {
@@ -341,7 +342,11 @@ function Index() {
       .map((d) => d.id);
     try {
       await Promise.all(ids.map((id) => remove(id)));
-      toast.success(`${target.cliente} · ${ids.length} ${ids.length === 1 ? "entrega removida" : "entregas removidas"}`);
+      removeStoredCliente(target.key);
+      const suf = ids.length === 0
+        ? "removido do cadastro"
+        : `${ids.length} ${ids.length === 1 ? "entrega removida" : "entregas removidas"}`;
+      toast.success(`${target.cliente} · ${suf}`);
     } catch {
       toast.error("Erro ao excluir cliente");
     }
@@ -364,6 +369,7 @@ function Index() {
           }),
         ),
       );
+      updateStoredCliente(updated.key, updated);
       toast.success("Cliente atualizado");
       setEditingCliente(undefined);
     } catch (err) {
