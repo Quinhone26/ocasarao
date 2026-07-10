@@ -140,6 +140,7 @@ export function DeliveryForm({
     toast.success(`Dados de ${c.cliente} preenchidos`);
   };
 
+  const runCepLookup = (digits: string) => {
     cepAbort.current?.abort();
     const ctrl = new AbortController();
     cepAbort.current = ctrl;
