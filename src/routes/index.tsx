@@ -447,7 +447,36 @@ function Index() {
               )}
             </TabsContent>
 
+            <TabsContent value="clientes" className="mt-4 space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  value={clienteSearch}
+                  onChange={(e) => setClienteSearch(e.target.value)}
+                  placeholder="Buscar por nome, telefone ou endereço"
+                  className="pl-9 h-12 bg-card"
+                />
+              </div>
+              {filteredClientes.length === 0 ? (
+                <div className="text-center py-16 text-muted-foreground">
+                  <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                  <p className="text-sm">
+                    {clientes.length === 0
+                      ? "Nenhum cliente ainda. Cadastre uma entrega para começar."
+                      : "Nenhum cliente encontrado."}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredClientes.map((c) => (
+                    <ClienteCard key={c.key} c={c} onNew={() => openNewForCliente(c)} />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
             <TabsContent value="relatorios" className="mt-4 space-y-3">
+
               <div className="rounded-2xl bg-card shadow-card border p-5">
                 <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Hoje</p>
                 <div className="mt-3 grid grid-cols-2 gap-4">
