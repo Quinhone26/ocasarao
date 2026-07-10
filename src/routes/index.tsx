@@ -556,6 +556,45 @@ function Index() {
   );
 }
 
+function ClienteCard({ c, onNew }: { c: Cliente; onNew: () => void }) {
+  const endereco = [c.endereco, c.numero].filter(Boolean).join(", ");
+  const cidade = [c.bairro, c.cidade].filter(Boolean).join(" · ");
+  return (
+    <div className="rounded-2xl bg-card shadow-card border p-4 flex flex-col gap-2">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-semibold truncate">{c.cliente}</p>
+          {c.telefone && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Phone className="w-3 h-3" /> {c.telefone}
+            </p>
+          )}
+        </div>
+        <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide bg-primary/10 text-primary rounded-full px-2 py-1">
+          {c.entregas} {c.entregas === 1 ? "entrega" : "entregas"}
+        </span>
+      </div>
+      {endereco && (
+        <p className="text-sm text-foreground/80 flex items-start gap-1.5">
+          <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
+          <span className="min-w-0">
+            {endereco}
+            {cidade && <span className="block text-xs text-muted-foreground">{cidade}</span>}
+          </span>
+        </p>
+      )}
+      <div className="flex items-center justify-between gap-3 pt-1">
+        <span className="text-xs text-muted-foreground">
+          Total: <span className="font-medium text-foreground">{formatBRL(c.totalValor)}</span>
+        </span>
+        <Button size="sm" onClick={onNew} className="h-9 gap-1.5">
+          <Plus className="w-4 h-4" /> Nova entrega
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div className={cn("rounded-2xl p-3 shadow-card", color)}>
