@@ -48,6 +48,8 @@ function Index() {
   const [prefill, setPrefill] = useState<Cliente | undefined>();
   const [clienteSearch, setClienteSearch] = useState("");
   const [deleting, setDeleting] = useState<Delivery | undefined>();
+  const [editingCliente, setEditingCliente] = useState<Cliente | undefined>();
+  const [deletingCliente, setDeletingCliente] = useState<Cliente | undefined>();
   const [arrivalPromptId, setArrivalPromptId] = useState<string | undefined>();
   const navigatedIdRef = useRef<string | undefined>(undefined);
   const navigatedAtRef = useRef<number>(0);
