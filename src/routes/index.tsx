@@ -332,6 +332,47 @@ function Index() {
     }
   };
 
+  const confirmDeleteCliente = async () => {
+    if (!deletingCliente) return;
+    const target = deletingCliente;
+    setDeletingCliente(undefined);
+    const ids = items
+      .filter((d) => clienteKey(d.cliente, d.telefone) === target.key)
+      .map((d) => d.id);
+    try {
+      await Promise.all(ids.map((id) => remove(id)));
+      toast.success(`${target.cliente} · ${ids.length} ${ids.length === 1 ? "entrega removida" : "entregas removidas"}`);
+    } catch {
+      toast.error("Erro ao excluir cliente");
+    }
+  };
+
+  const saveCliente = async (updated: Cliente) => {
+    const targets = items.filter((d) => clienteKey(d.cliente, d.telefone) === updated.key);
+    try {
+      await Promise.all(
+        targets.map((d) =>
+          update(d.id, {
+            cliente: updated.cliente,
+            telefone: updated.telefone,
+            cep: updated.cep,
+            endereco: updated.endereco,
+            numero: updated.numero,
+            bairro: updated.bairro,
+            cidade: updated.cidade,
+            complemento: updated.complemento,
+          }),
+        ),
+      );
+      toast.success("Cliente atualizado");
+      setEditingCliente(undefined);
+    } catch (err) {
+      toast.error("Erro ao salvar cliente", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    }
+  };
+
   // Indicador de "offline" — apenas informativo. Inicializa como `true` para
   // evitar mismatch de hidratação (SSR sem navigator). O effect ajusta no client.
   const [online, setOnline] = useState(true);
