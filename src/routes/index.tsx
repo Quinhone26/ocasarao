@@ -99,8 +99,46 @@ function Index() {
     });
   }, [items, search, filter]);
 
-  const openNew = () => { setEditing(undefined); setFormOpen(true); };
-  const openEdit = (d: Delivery) => { setEditing(d); setFormOpen(true); };
+  const openNew = () => { setEditing(undefined); setPrefill(undefined); setFormOpen(true); };
+  const openEdit = (d: Delivery) => { setEditing(d); setPrefill(undefined); setFormOpen(true); };
+  const openNewForCliente = (c: Cliente) => { setEditing(undefined); setPrefill(c); setFormOpen(true); };
+
+  const filteredClientes = useMemo(() => {
+    const q = clienteSearch.trim().toLowerCase();
+    if (!q) return clientes;
+    return clientes.filter(
+      (c) =>
+        c.cliente.toLowerCase().includes(q) ||
+        c.telefone.toLowerCase().includes(q) ||
+        c.endereco.toLowerCase().includes(q) ||
+        c.bairro.toLowerCase().includes(q),
+    );
+  }, [clientes, clienteSearch]);
+
+  // "initial" sintético para pré-preencher o form a partir de um cliente escolhido.
+  const prefillInitial: Delivery | undefined = useMemo(() => {
+    if (!prefill) return undefined;
+    return {
+      id: "",
+      cliente: prefill.cliente,
+      telefone: prefill.telefone,
+      cep: prefill.cep,
+      endereco: prefill.endereco,
+      numero: prefill.numero,
+      bairro: prefill.bairro,
+      cidade: prefill.cidade,
+      complemento: prefill.complemento,
+      observacoes: "",
+      valor: 0,
+      dataHora: new Date().toISOString(),
+      agendadoPara: null,
+      lat: prefill.lat,
+      lng: prefill.lng,
+      status: "pendente",
+      criadoEm: new Date().toISOString(),
+    };
+  }, [prefill]);
+
 
   const handleSubmit = async (v: DeliveryFormValues) => {
     try {
