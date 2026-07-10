@@ -39,10 +39,13 @@ type Filter = "todas" | DeliveryStatus;
 
 function Index() {
   const { items, create, update, remove } = useDeliveries();
+  const clientes = useClientes(items);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("todas");
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Delivery | undefined>();
+  const [prefill, setPrefill] = useState<Cliente | undefined>();
+  const [clienteSearch, setClienteSearch] = useState("");
   const [deleting, setDeleting] = useState<Delivery | undefined>();
   const [arrivalPromptId, setArrivalPromptId] = useState<string | undefined>();
   const navigatedIdRef = useRef<string | undefined>(undefined);
