@@ -513,7 +513,13 @@ function Index() {
               ) : (
                 <div className="space-y-2">
                   {filteredClientes.map((c) => (
-                    <ClienteCard key={c.key} c={c} onNew={() => openNewForCliente(c)} />
+                    <ClienteCard
+                      key={c.key}
+                      c={c}
+                      onNew={() => openNewForCliente(c)}
+                      onEdit={() => setEditingCliente(c)}
+                      onDelete={() => setDeletingCliente(c)}
+                    />
                   ))}
                 </div>
               )}
