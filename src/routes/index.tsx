@@ -503,6 +503,7 @@ function Index() {
                       onEdit={() => openEdit(d)}
                       onDelete={() => setDeleting(d)}
                       onDeliver={() => handleDeliver(d)}
+                      onPrint={() => printComanda(d)}
                     />
                   ))}
                 </div>
