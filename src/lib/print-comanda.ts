@@ -103,6 +103,8 @@ export function printComanda(d: Delivery | (Omit<Delivery, "id" | "criadoEm"> & 
       <span>Pagamento</span>
       <span class="${d.pago ? "pago-yes" : "pago-no"}">${d.pago ? "PAGO" : "NÃO PAGO"}</span>
     </div>
+
+    ${company.saudacao ? `<div class="divider"></div><div class="center big">${esc(company.saudacao)}</div>` : ""}
   </div>
   <script>
     window.addEventListener('load', function () {
