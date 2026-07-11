@@ -470,7 +470,7 @@ function Index() {
 
               {/* Filter chips */}
               <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-                {(["todas", "pendente", "em_rota", "entregue", "cancelada"] as Filter[]).map((f) => (
+                {(["todas", "pendente", "em_rota"] as Filter[]).map((f) => (
                   <button
                     key={f}
                     onClick={() => setFilter(f)}
