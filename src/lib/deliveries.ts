@@ -22,6 +22,7 @@ export interface Delivery {
   lat: number | null;
   lng: number | null;
   status: DeliveryStatus;
+  pago: boolean;
   criadoEm: string;
 }
 
@@ -61,6 +62,7 @@ export const deliverySchema = z.object({
   status: z
     .enum(["pendente", "em_rota", "entregue", "cancelada"])
     .default("pendente"),
+  pago: z.boolean().default(false),
 });
 
 export type DeliveryInput = z.infer<typeof deliverySchema>;
@@ -126,6 +128,7 @@ function fromRow(r: DeliveryRow): Delivery {
     lat: r.lat,
     lng: r.lng,
     status: r.status,
+    pago: r.pago ?? false,
     criadoEm: r.criado_em,
   };
 }
@@ -148,6 +151,7 @@ function toRow(d: Partial<Delivery>): Partial<DeliveryRow> {
   if (d.lat !== undefined) r.lat = d.lat;
   if (d.lng !== undefined) r.lng = d.lng;
   if (d.status !== undefined) r.status = d.status;
+  if (d.pago !== undefined) r.pago = d.pago;
   if (d.criadoEm !== undefined) r.criado_em = d.criadoEm;
   return r;
 }

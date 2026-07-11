@@ -178,6 +178,7 @@ function Index() {
       lat: prefill.lat,
       lng: prefill.lng,
       status: "pendente",
+      pago: false,
       criadoEm: new Date().toISOString(),
     };
   }, [prefill]);
@@ -543,6 +544,14 @@ function Index() {
                       onDelete={() => setDeleting(d)}
                       onDeliver={() => handleDeliver(d)}
                       onPrint={() => printComanda(d)}
+                      onTogglePago={async () => {
+                        try {
+                          await update(d.id, { pago: !d.pago });
+                          toast.success(!d.pago ? "Marcada como paga" : "Marcada como não paga");
+                        } catch {
+                          toast.error("Erro ao atualizar pagamento");
+                        }
+                      }}
                     />
                   ))}
                 </div>
