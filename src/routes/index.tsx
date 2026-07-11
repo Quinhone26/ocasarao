@@ -15,6 +15,7 @@ import { useDeliveries, buildMapsUrl, formatBRL, statusLabel, distanceMeters } f
 import { useClientes, clienteKey, upsertClienteFromDelivery, updateStoredCliente, removeStoredCliente, type Cliente } from "@/lib/clientes";
 import { cn } from "@/lib/utils";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { printComanda } from "@/lib/print-comanda";
 
 export const Route = createFileRoute("/")({
   component: Index,
