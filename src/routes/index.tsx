@@ -63,6 +63,10 @@ function Index() {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }, []);
   const [reportDay, setReportDay] = useState<string>(todayISO);
+  const [company, setCompany] = useCompanySettings();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [companyDraft, setCompanyDraft] = useState(company);
+  useEffect(() => { setCompanyDraft(company); }, [company, settingsOpen]);
 
 
   const counts = useMemo(() => {
