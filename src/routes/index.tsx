@@ -807,17 +807,24 @@ function Index() {
           <DialogFooter className="gap-2 pt-2">
             <Button variant="secondary" onClick={() => setSettingsOpen(false)}>Cancelar</Button>
             <Button
-              onClick={() => {
-                setCompany({
-                  nome: companyDraft.nome.trim() || "RotaExpress",
-                  saudacao: companyDraft.saudacao.trim(),
-                });
-                setSettingsOpen(false);
-                toast.success("Configurações salvas");
+              onClick={async () => {
+                try {
+                  await setCompany({
+                    nome: companyDraft.nome.trim() || "RotaExpress",
+                    saudacao: companyDraft.saudacao.trim(),
+                  });
+                  setSettingsOpen(false);
+                  toast.success("Configurações salvas");
+                } catch (e) {
+                  toast.error("Falha ao salvar", {
+                    description: e instanceof Error ? e.message : "Erro desconhecido",
+                  });
+                }
               }}
             >
               Salvar
             </Button>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>
