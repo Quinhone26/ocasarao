@@ -118,6 +118,17 @@ export function DeliveryCard({
           <Pencil className="w-4 h-4" />
           <span className="text-[10px] font-semibold">Editar</span>
         </Button>
+        {onPrint && (
+          <Button
+            onClick={onPrint}
+            variant="secondary"
+            className="h-12 flex-col gap-0.5 rounded-xl"
+            aria-label="Imprimir comanda"
+          >
+            <Printer className="w-4 h-4" />
+            <span className="text-[10px] font-semibold">Imprimir</span>
+          </Button>
+        )}
         <Button
           onClick={onDelete}
           variant="ghost"
