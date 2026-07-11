@@ -16,6 +16,7 @@ import { useClientes, clienteKey, upsertClienteFromDelivery, updateStoredCliente
 import { cn } from "@/lib/utils";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { printComanda } from "@/lib/print-comanda";
+import { useCompanySettings } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/")({
   component: Index,
