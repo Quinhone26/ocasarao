@@ -774,6 +774,55 @@ function Index() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Configurações da empresa */}
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Configurações da empresa</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="company-nome">Nome da empresa</Label>
+              <Input
+                id="company-nome"
+                value={companyDraft.nome}
+                onChange={(e) => setCompanyDraft({ ...companyDraft, nome: e.target.value })}
+                placeholder="Ex.: O Casarão"
+              />
+              <p className="text-xs text-muted-foreground">Aparece no topo do app e na comanda impressa.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="company-saudacao">Mensagem de saudação</Label>
+              <textarea
+                id="company-saudacao"
+                value={companyDraft.saudacao}
+                onChange={(e) => setCompanyDraft({ ...companyDraft, saudacao: e.target.value })}
+                placeholder="Ex.: Obrigado pela preferência!"
+                rows={3}
+                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              />
+              <p className="text-xs text-muted-foreground">Impressa no rodapé da comanda de entrega.</p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setSettingsOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                setCompany({
+                  nome: companyDraft.nome.trim() || "RotaExpress",
+                  saudacao: companyDraft.saudacao.trim(),
+                });
+                setSettingsOpen(false);
+                toast.success("Configurações salvas");
+              }}
+            >
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
     </div>
   );
 }
