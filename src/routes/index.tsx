@@ -102,6 +102,29 @@ function Index() {
     };
   }, [items]);
 
+  const dayItems = useMemo(() => {
+    return items
+      .filter((d) => {
+        const dt = new Date(d.dataHora);
+        const pad = (n: number) => String(n).padStart(2, "0");
+        const key = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+        return key === reportDay;
+      })
+      .sort((a, b) => +new Date(b.dataHora) - +new Date(a.dataHora));
+  }, [items, reportDay]);
+
+  const dayStats = useMemo(() => {
+    let total = 0, entregues = 0, pendentes = 0, canceladas = 0, receita = 0;
+    for (const d of dayItems) {
+      total++;
+      if (d.status === "entregue") { entregues++; receita += d.valor; }
+      else if (d.status === "cancelada") canceladas++;
+      else pendentes++;
+    }
+    return { total, entregues, pendentes, canceladas, receita, taxa: total ? Math.round((entregues / total) * 100) : 0 };
+  }, [dayItems]);
+
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter((d) => {
