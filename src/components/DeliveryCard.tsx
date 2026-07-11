@@ -10,12 +10,14 @@ export function DeliveryCard({
   onDelete,
   onDeliver,
   onNavigate,
+  onPrint,
 }: {
   d: Delivery;
   onEdit: () => void;
   onDelete: () => void;
   onDeliver: () => void;
   onNavigate: () => void;
+  onPrint?: () => void;
 }) {
   const dt = new Date(d.dataHora);
   const fullAddr = [
