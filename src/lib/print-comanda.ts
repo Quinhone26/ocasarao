@@ -109,8 +109,15 @@ export function printComanda(d: Delivery | (Omit<Delivery, "id" | "criadoEm"> & 
 </body>
 </html>`;
 
-  const w = window.open("", "_blank", "noopener,width=420,height=720");
-  if (!w) return;
+  const w = window.open("", "_blank", "width=420,height=720");
+  if (!w) {
+    // Popup bloqueado — fallback: abre via Blob URL (mesma aba se preciso).
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const fallback = window.open(url, "_blank");
+    if (!fallback) window.location.href = url;
+    return;
+  }
   w.document.open();
   w.document.write(html);
   w.document.close();
