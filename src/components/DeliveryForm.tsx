@@ -38,6 +38,7 @@ export interface DeliveryFormValues {
   lat: number | null;
   lng: number | null;
   status: DeliveryStatus;
+  pago: boolean;
 }
 
 function toLocalInput(iso: string): string {
