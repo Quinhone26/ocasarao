@@ -1,5 +1,6 @@
 import type { Delivery } from "./deliveries";
 import { formatBRL } from "./deliveries";
+import { getCompanySettings } from "./company-settings";
 
 function esc(s: string): string {
   return s
