@@ -38,6 +38,7 @@ export function printComanda(d: Delivery | (Omit<Delivery, "id" | "criadoEm"> & 
 
   const agendado = d.agendadoPara ? fmtDateTime(d.agendadoPara) : "";
   const criado = fmtDateTime(d.dataHora);
+  const company = getCompanySettings();
 
   const html = `<!doctype html>
 <html lang="pt-BR">
