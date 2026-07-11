@@ -479,9 +479,17 @@ function Index() {
               <Bike className="w-6 h-6" />
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className="text-lg font-bold leading-tight">RotaExpress</h1>
+              <h1 className="text-lg font-bold leading-tight truncate">{company.nome || "RotaExpress"}</h1>
               <p className="text-xs text-primary-foreground/70">Gestão de entregas</p>
             </div>
+            <button
+              type="button"
+              onClick={() => setSettingsOpen(true)}
+              className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-primary-foreground/10 hover:bg-primary-foreground/20"
+              aria-label="Configurações da empresa"
+            >
+              <SettingsIcon className="w-5 h-5" />
+            </button>
             <Link
               to="/rota"
               className="inline-flex items-center gap-1.5 h-10 px-3 rounded-xl bg-accent text-accent-foreground text-sm font-semibold shadow-elevated hover:bg-accent/90"
