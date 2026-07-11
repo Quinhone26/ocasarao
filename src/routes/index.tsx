@@ -446,7 +446,7 @@ function Index() {
           <section className="grid grid-cols-3 gap-2 mt-4">
             <StatCard label="Pendentes" value={counts.pendente} color="bg-status-pending text-status-pending-foreground" />
             <StatCard label="Em Rota" value={counts.em_rota} color="bg-status-route text-status-route-foreground" />
-            <StatCard label="Entregues" value={counts.entregue} color="bg-status-delivered text-status-delivered-foreground" />
+            <StatCard label="Entregues hoje" value={todayStats.entregues} color="bg-status-delivered text-status-delivered-foreground" />
           </section>
 
           <Tabs defaultValue="entregas" className="mt-5">
@@ -470,7 +470,7 @@ function Index() {
 
               {/* Filter chips */}
               <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-                {(["todas", "pendente", "em_rota", "entregue", "cancelada"] as Filter[]).map((f) => (
+                {(["todas", "pendente", "em_rota"] as Filter[]).map((f) => (
                   <button
                     key={f}
                     onClick={() => setFilter(f)}
