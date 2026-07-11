@@ -52,12 +52,27 @@ export function DeliveryCard({
           <span className="min-w-0">{fullAddr || "Endereço não informado"}</span>
         </div>
 
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center justify-between text-sm gap-2">
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <Clock className="w-3.5 h-3.5" />
             {dt.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
           </div>
-          <div className="font-semibold text-primary">{formatBRL(d.valor)}</div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onTogglePago}
+              disabled={!onTogglePago}
+              className={
+                d.pago
+                  ? "text-[10px] font-bold uppercase tracking-wide rounded-full px-2 py-0.5 bg-status-delivered text-status-delivered-foreground"
+                  : "text-[10px] font-bold uppercase tracking-wide rounded-full px-2 py-0.5 bg-muted text-muted-foreground border border-border"
+              }
+              aria-label={d.pago ? "Marcar como não pago" : "Marcar como pago"}
+            >
+              {d.pago ? "Pago" : "Não pago"}
+            </button>
+            <div className="font-semibold text-primary">{formatBRL(d.valor)}</div>
+          </div>
         </div>
 
         {d.agendadoPara && (
