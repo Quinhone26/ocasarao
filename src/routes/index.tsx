@@ -607,124 +607,84 @@ function Index() {
             </TabsContent>
 
             <TabsContent value="relatorios" className="mt-4 space-y-3">
-
-              {/* Seletor de dia */}
-              <div className="rounded-2xl bg-card shadow-card border p-4">
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" onClick={() => shiftReportDay(-1)} aria-label="Dia anterior">
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                  <div className="flex-1 relative">
-                    <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                    <Input
-                      type="date"
-                      value={reportDay}
-                      max={todayISO}
-                      onChange={(e) => setReportDay(e.target.value || todayISO)}
-                      className="pl-9 h-10 text-center font-semibold"
-                    />
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => shiftReportDay(1)}
-                    disabled={reportDay >= todayISO}
-                    aria-label="Próximo dia"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-                {reportDay !== todayISO && (
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="mt-1 h-7 px-0 text-xs"
-                    onClick={() => setReportDay(todayISO)}
-                  >
-                    Voltar para hoje
-                  </Button>
-                )}
-              </div>
-
-              {/* Estatísticas do dia */}
-              <div className="rounded-2xl bg-card shadow-card border p-5">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
-                  {reportDay === todayISO
-                    ? "Hoje"
-                    : new Date(reportDay + "T00:00:00").toLocaleDateString("pt-BR", {
-                        weekday: "long",
-                        day: "2-digit",
-                        month: "long",
-                        year: "numeric",
-                      })}
-                </p>
-                <div className="mt-3 grid grid-cols-2 gap-4">
-                  <Metric label="Total" value={dayStats.total} />
-                  <Metric label="Entregues" value={dayStats.entregues} accent="text-status-delivered" />
-                  <Metric label="Em aberto" value={dayStats.pendentes} accent="text-status-pending" />
-                  <Metric label="Taxa" value={`${dayStats.taxa}%`} accent="text-primary" />
-                </div>
-                <div className="mt-4 pt-4 border-t">
-                  <p className="text-xs text-muted-foreground">Receita do dia</p>
-                  <p className="text-2xl font-bold text-primary">{formatBRL(dayStats.receita)}</p>
-                </div>
-              </div>
-
-              {/* Lista de entregas do dia */}
+              {/* Lista de entregas agrupadas por dia */}
               <div className="rounded-2xl bg-card shadow-card border p-4">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
-                    Entregas do dia
+                    Entregas por dia
                   </p>
                   <span className="text-xs text-muted-foreground">
-                    {dayItems.length} {dayItems.length === 1 ? "entrega" : "entregas"}
+                    {daysSummary.length} {daysSummary.length === 1 ? "dia" : "dias"}
                   </span>
                 </div>
-                {dayItems.length === 0 ? (
+
+                {daysSummary.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">
-                    Nenhuma entrega neste dia
+                    Nenhuma entrega registrada
                   </p>
                 ) : (
                   <ul className="divide-y">
-                    {dayItems.map((d) => (
-                      <li key={d.id} className="py-2.5 flex items-center gap-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium text-sm truncate">{d.cliente}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {new Date(d.dataHora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                            {d.endereco ? ` · ${d.endereco}${d.numero ? ", " + d.numero : ""}` : ""}
-                          </p>
-                        </div>
-                        <span
-                          className={cn(
-                            "shrink-0 text-[10px] uppercase font-semibold rounded-full px-2 py-0.5",
-                            d.status === "entregue" && "bg-status-delivered/15 text-status-delivered",
-                            d.status === "em_rota" && "bg-status-route/15 text-status-route",
-                            d.status === "pendente" && "bg-status-pending/20 text-status-pending-foreground",
-                            d.status === "cancelada" && "bg-destructive/15 text-destructive",
+                    {daysSummary.map(({ day, count }) => {
+                      const selected = day === reportDay;
+                      const [y, m, dd] = day.split("-");
+                      return (
+                        <li key={day}>
+                          <button
+                            type="button"
+                            onClick={() => setReportDay(selected ? "" : day)}
+                            className={cn(
+                              "w-full flex items-center justify-between py-3 px-2 rounded-lg transition-colors",
+                              selected ? "bg-primary/10" : "hover:bg-muted/50",
+                            )}
+                          >
+                            <span className="flex items-center gap-2 font-semibold">
+                              <CalendarIcon className="w-4 h-4 text-muted-foreground" />
+                              {dd}/{m}/{y}
+                              {day === todayISO && (
+                                <span className="text-[10px] uppercase font-semibold rounded-full px-1.5 py-0.5 bg-primary/15 text-primary">
+                                  Hoje
+                                </span>
+                              )}
+                            </span>
+                            <span className="text-sm font-semibold text-primary">
+                              {count} {count === 1 ? "entrega" : "entregas"}
+                            </span>
+                          </button>
+
+                          {selected && (
+                            <ul className="pl-6 pr-2 pb-3 pt-1 space-y-1">
+                              {dayItems.map((d) => (
+                                <li key={d.id} className="flex items-center gap-3 py-1.5 border-t first:border-t-0">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-medium text-sm truncate">{d.cliente}</p>
+                                    <p className="text-xs text-muted-foreground truncate">
+                                      {new Date(d.dataHora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                                      {d.endereco ? ` · ${d.endereco}${d.numero ? ", " + d.numero : ""}` : ""}
+                                    </p>
+                                  </div>
+                                  <span
+                                    className={cn(
+                                      "shrink-0 text-[10px] uppercase font-semibold rounded-full px-2 py-0.5",
+                                      d.status === "entregue" && "bg-status-delivered/15 text-status-delivered",
+                                      d.status === "em_rota" && "bg-status-route/15 text-status-route",
+                                      d.status === "pendente" && "bg-status-pending/20 text-status-pending-foreground",
+                                      d.status === "cancelada" && "bg-destructive/15 text-destructive",
+                                    )}
+                                  >
+                                    {statusLabel[d.status]}
+                                  </span>
+                                  <span className="shrink-0 text-sm font-semibold tabular-nums w-20 text-right">
+                                    {formatBRL(d.valor)}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
                           )}
-                        >
-                          {statusLabel[d.status]}
-                        </span>
-                        <span className="shrink-0 text-sm font-semibold tabular-nums w-20 text-right">
-                          {formatBRL(d.valor)}
-                        </span>
-                      </li>
-                    ))}
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
-              </div>
-
-              <div className="rounded-2xl bg-card shadow-card border p-5">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Geral</p>
-                <div className="mt-3 space-y-2">
-                  {(Object.keys(statusLabel) as DeliveryStatus[]).map((s) => (
-                    <div key={s} className="flex items-center justify-between">
-                      <span className="text-sm">{statusLabel[s]}</span>
-                      <span className="font-semibold">{counts[s]}</span>
-                    </div>
-                  ))}
-                </div>
               </div>
             </TabsContent>
           </Tabs>
