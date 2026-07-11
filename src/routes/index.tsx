@@ -15,6 +15,7 @@ import { useDeliveries, buildMapsUrl, formatBRL, statusLabel, distanceMeters } f
 import { useClientes, clienteKey, upsertClienteFromDelivery, updateStoredCliente, removeStoredCliente, type Cliente } from "@/lib/clientes";
 import { cn } from "@/lib/utils";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { printComanda } from "@/lib/print-comanda";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -147,10 +148,21 @@ function Index() {
     try {
       if (editing) {
         await update(editing.id, v);
-        toast.success("Entrega atualizada");
+        toast.success("Entrega atualizada", {
+          action: {
+            label: "Imprimir comanda",
+            onClick: () => printComanda({ ...editing, ...v }),
+          },
+        });
       } else {
-        await create(v);
-        toast.success("Entrega cadastrada");
+        const created = await create(v);
+        toast.success("Entrega cadastrada", {
+          duration: 8000,
+          action: {
+            label: "Imprimir comanda",
+            onClick: () => printComanda(created),
+          },
+        });
       }
       upsertClienteFromDelivery(v);
       setFormOpen(false);
@@ -491,6 +503,7 @@ function Index() {
                       onEdit={() => openEdit(d)}
                       onDelete={() => setDeleting(d)}
                       onDeliver={() => handleDeliver(d)}
+                      onPrint={() => printComanda(d)}
                     />
                   ))}
                 </div>

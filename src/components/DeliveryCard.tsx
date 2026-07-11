@@ -1,4 +1,4 @@
-import { Navigation, Pencil, Trash2, CheckCircle2, Phone, MapPin, Clock, CalendarClock } from "lucide-react";
+import { Navigation, Pencil, Trash2, CheckCircle2, Phone, MapPin, Clock, CalendarClock, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "./StatusBadge";
 import type { Delivery } from "@/lib/deliveries";
@@ -10,12 +10,14 @@ export function DeliveryCard({
   onDelete,
   onDeliver,
   onNavigate,
+  onPrint,
 }: {
   d: Delivery;
   onEdit: () => void;
   onDelete: () => void;
   onDeliver: () => void;
   onNavigate: () => void;
+  onPrint?: () => void;
 }) {
   const dt = new Date(d.dataHora);
   const fullAddr = [
@@ -89,7 +91,7 @@ export function DeliveryCard({
       )}
 
 
-      <div className="grid grid-cols-4 gap-1 p-2 border-t border-border bg-muted/30">
+      <div className={`grid ${onPrint ? "grid-cols-5" : "grid-cols-4"} gap-1 p-2 border-t border-border bg-muted/30`}>
         <Button
           onClick={onNavigate}
           className="h-12 flex-col gap-0.5 bg-accent text-accent-foreground hover:bg-accent/90 rounded-xl"
@@ -116,6 +118,17 @@ export function DeliveryCard({
           <Pencil className="w-4 h-4" />
           <span className="text-[10px] font-semibold">Editar</span>
         </Button>
+        {onPrint && (
+          <Button
+            onClick={onPrint}
+            variant="secondary"
+            className="h-12 flex-col gap-0.5 rounded-xl"
+            aria-label="Imprimir comanda"
+          >
+            <Printer className="w-4 h-4" />
+            <span className="text-[10px] font-semibold">Imprimir</span>
+          </Button>
+        )}
         <Button
           onClick={onDelete}
           variant="ghost"
