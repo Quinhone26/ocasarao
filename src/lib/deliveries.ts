@@ -62,6 +62,7 @@ export const deliverySchema = z.object({
   status: z
     .enum(["pendente", "em_rota", "entregue", "cancelada"])
     .default("pendente"),
+  pago: z.boolean().default(false),
 });
 
 export type DeliveryInput = z.infer<typeof deliverySchema>;
