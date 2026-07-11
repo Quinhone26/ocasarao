@@ -178,6 +178,7 @@ function Index() {
       lat: prefill.lat,
       lng: prefill.lng,
       status: "pendente",
+      pago: false,
       criadoEm: new Date().toISOString(),
     };
   }, [prefill]);
