@@ -46,18 +46,20 @@ export function printComanda(d: Delivery | (Omit<Delivery, "id" | "criadoEm"> & 
 <style>
   @page { size: 80mm auto; margin: 4mm; }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, system-ui, sans-serif; color: #000; background: #fff; }
-  .wrap { width: 72mm; padding: 4mm 2mm; font-size: 12px; line-height: 1.35; }
+  html, body { margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, system-ui, sans-serif; color: #000; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .wrap { width: 72mm; padding: 4mm 2mm; font-size: 13px; line-height: 1.4; font-weight: 700; }
   .center { text-align: center; }
-  h1 { margin: 0; font-size: 15px; letter-spacing: 1px; }
-  h2 { margin: 6px 0 2px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .muted { color: #444; font-size: 11px; }
-  .row { display: flex; justify-content: space-between; gap: 8px; }
-  .divider { border-top: 1px dashed #000; margin: 6px 0; }
-  .box { border: 1px solid #000; padding: 4px 6px; margin-top: 4px; }
-  .big { font-size: 14px; font-weight: 700; }
-  .total { font-size: 16px; font-weight: 800; }
-  .obs { white-space: pre-wrap; }
+  h1 { margin: 0; font-size: 18px; letter-spacing: 1px; font-weight: 900; }
+  h2 { margin: 8px 0 3px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 900; }
+  .muted { color: #000; font-size: 12px; font-weight: 700; }
+  .row { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+  .divider { border-top: 2px dashed #000; margin: 7px 0; }
+  .box { border: 2px solid #000; padding: 5px 7px; margin-top: 5px; }
+  .big { font-size: 15px; font-weight: 900; }
+  .total { font-size: 18px; font-weight: 900; }
+  .obs { white-space: pre-wrap; font-weight: 700; }
+  .pago-yes { display: inline-block; border: 2px solid #000; padding: 3px 10px; font-weight: 900; font-size: 14px; letter-spacing: 1px; background: #000; color: #fff; }
+  .pago-no { display: inline-block; border: 2px solid #000; padding: 3px 10px; font-weight: 900; font-size: 14px; letter-spacing: 1px; background: #fff; color: #000; }
   @media screen {
     body { background: #eee; padding: 20px; }
     .wrap { background: #fff; margin: 0 auto; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
@@ -95,10 +97,10 @@ export function printComanda(d: Delivery | (Omit<Delivery, "id" | "criadoEm"> & 
       <span class="total">${esc(formatBRL(Number(d.valor) || 0))}</span>
     </div>
 
-    <div class="divider"></div>
-
-    <div class="center muted">Assinatura do cliente</div>
-    <div style="height: 30px; border-bottom: 1px solid #000; margin: 4px 4px 0;"></div>
+    <div class="row" style="margin-top:6px;">
+      <span>Pagamento</span>
+      <span class="${d.pago ? "pago-yes" : "pago-no"}">${d.pago ? "PAGO" : "NÃO PAGO"}</span>
+    </div>
   </div>
   <script>
     window.addEventListener('load', function () {
