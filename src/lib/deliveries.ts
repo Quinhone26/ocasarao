@@ -128,6 +128,7 @@ function fromRow(r: DeliveryRow): Delivery {
     lat: r.lat,
     lng: r.lng,
     status: r.status,
+    pago: r.pago ?? false,
     criadoEm: r.criado_em,
   };
 }
