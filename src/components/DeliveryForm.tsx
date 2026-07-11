@@ -64,6 +64,7 @@ const empty: DeliveryFormValues = {
   lat: null,
   lng: null,
   status: "pendente",
+  pago: false,
 };
 
 export function DeliveryForm({
