@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Search, Bike, BarChart3, ClipboardList, Route as RouteIcon, Users, Phone, MapPin, Pencil, Trash2, Calendar as CalendarIcon } from "lucide-react";
+import { Plus, Search, Bike, BarChart3, ClipboardList, Route as RouteIcon, Users, Phone, MapPin, Pencil, Trash2, Calendar as CalendarIcon, Settings as SettingsIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { useClientes, clienteKey, upsertClienteFromDelivery, updateStoredCliente
 import { cn } from "@/lib/utils";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { printComanda } from "@/lib/print-comanda";
+import { useCompanySettings } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -62,6 +63,10 @@ function Index() {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }, []);
   const [reportDay, setReportDay] = useState<string>(todayISO);
+  const [company, setCompany] = useCompanySettings();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [companyDraft, setCompanyDraft] = useState(company);
+  useEffect(() => { setCompanyDraft(company); }, [company, settingsOpen]);
 
 
   const counts = useMemo(() => {
@@ -474,9 +479,17 @@ function Index() {
               <Bike className="w-6 h-6" />
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className="text-lg font-bold leading-tight">RotaExpress</h1>
+              <h1 className="text-lg font-bold leading-tight truncate">{company.nome || "RotaExpress"}</h1>
               <p className="text-xs text-primary-foreground/70">Gestão de entregas</p>
             </div>
+            <button
+              type="button"
+              onClick={() => setSettingsOpen(true)}
+              className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-primary-foreground/10 hover:bg-primary-foreground/20"
+              aria-label="Configurações da empresa"
+            >
+              <SettingsIcon className="w-5 h-5" />
+            </button>
             <Link
               to="/rota"
               className="inline-flex items-center gap-1.5 h-10 px-3 rounded-xl bg-accent text-accent-foreground text-sm font-semibold shadow-elevated hover:bg-accent/90"
@@ -760,6 +773,55 @@ function Index() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Configurações da empresa */}
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Configurações da empresa</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="company-nome">Nome da empresa</Label>
+              <Input
+                id="company-nome"
+                value={companyDraft.nome}
+                onChange={(e) => setCompanyDraft({ ...companyDraft, nome: e.target.value })}
+                placeholder="Ex.: O Casarão"
+              />
+              <p className="text-xs text-muted-foreground">Aparece no topo do app e na comanda impressa.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="company-saudacao">Mensagem de saudação</Label>
+              <textarea
+                id="company-saudacao"
+                value={companyDraft.saudacao}
+                onChange={(e) => setCompanyDraft({ ...companyDraft, saudacao: e.target.value })}
+                placeholder="Ex.: Obrigado pela preferência!"
+                rows={3}
+                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              />
+              <p className="text-xs text-muted-foreground">Impressa no rodapé da comanda de entrega.</p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setSettingsOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                setCompany({
+                  nome: companyDraft.nome.trim() || "RotaExpress",
+                  saudacao: companyDraft.saudacao.trim(),
+                });
+                setSettingsOpen(false);
+                toast.success("Configurações salvas");
+              }}
+            >
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
     </div>
   );

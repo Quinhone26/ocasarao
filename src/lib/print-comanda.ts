@@ -1,5 +1,6 @@
 import type { Delivery } from "./deliveries";
 import { formatBRL } from "./deliveries";
+import { getCompanySettings } from "./company-settings";
 
 function esc(s: string): string {
   return s
@@ -37,6 +38,7 @@ export function printComanda(d: Delivery | (Omit<Delivery, "id" | "criadoEm"> & 
 
   const agendado = d.agendadoPara ? fmtDateTime(d.agendadoPara) : "";
   const criado = fmtDateTime(d.dataHora);
+  const company = getCompanySettings();
 
   const html = `<!doctype html>
 <html lang="pt-BR">
@@ -69,7 +71,7 @@ export function printComanda(d: Delivery | (Omit<Delivery, "id" | "criadoEm"> & 
 <body>
   <div class="wrap">
     <div class="center">
-      <h1>RotaExpress</h1>
+      <h1>${esc(company.nome || "RotaExpress")}</h1>
       <div class="muted">Comanda de Entrega</div>
       <div class="muted">${esc(criado)}</div>
     </div>
@@ -101,6 +103,8 @@ export function printComanda(d: Delivery | (Omit<Delivery, "id" | "criadoEm"> & 
       <span>Pagamento</span>
       <span class="${d.pago ? "pago-yes" : "pago-no"}">${d.pago ? "PAGO" : "NÃO PAGO"}</span>
     </div>
+
+    ${company.saudacao ? `<div class="divider"></div><div class="center big">${esc(company.saudacao)}</div>` : ""}
   </div>
   <script>
     window.addEventListener('load', function () {
