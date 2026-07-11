@@ -544,6 +544,14 @@ function Index() {
                       onDelete={() => setDeleting(d)}
                       onDeliver={() => handleDeliver(d)}
                       onPrint={() => printComanda(d)}
+                      onTogglePago={async () => {
+                        try {
+                          await update(d.id, { pago: !d.pago });
+                          toast.success(!d.pago ? "Marcada como paga" : "Marcada como não paga");
+                        } catch {
+                          toast.error("Erro ao atualizar pagamento");
+                        }
+                      }}
                     />
                   ))}
                 </div>
