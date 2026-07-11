@@ -55,6 +55,22 @@ function Index() {
   const navigatedIdRef = useRef<string | undefined>(undefined);
   const navigatedAtRef = useRef<number>(0);
 
+  // Dia selecionado no relatório (ISO yyyy-mm-dd). Default: hoje.
+  const todayISO = useMemo(() => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }, []);
+  const [reportDay, setReportDay] = useState<string>(todayISO);
+  const shiftReportDay = (delta: number) => {
+    const [y, m, d] = reportDay.split("-").map(Number);
+    const dt = new Date(y, (m ?? 1) - 1, d ?? 1);
+    dt.setDate(dt.getDate() + delta);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    setReportDay(`${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`);
+  };
+
+
   const counts = useMemo(() => {
     const c = { pendente: 0, em_rota: 0, entregue: 0, cancelada: 0 };
     for (const d of items) c[d.status]++;
