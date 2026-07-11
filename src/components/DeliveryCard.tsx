@@ -91,7 +91,7 @@ export function DeliveryCard({
       )}
 
 
-      <div className="grid grid-cols-4 gap-1 p-2 border-t border-border bg-muted/30">
+      <div className={`grid ${onPrint ? "grid-cols-5" : "grid-cols-4"} gap-1 p-2 border-t border-border bg-muted/30`}>
         <Button
           onClick={onNavigate}
           className="h-12 flex-col gap-0.5 bg-accent text-accent-foreground hover:bg-accent/90 rounded-xl"
