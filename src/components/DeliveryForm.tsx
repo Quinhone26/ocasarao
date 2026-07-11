@@ -108,6 +108,7 @@ export function DeliveryForm({
         status: (["pendente", "em_rota", "entregue", "cancelada"] as DeliveryStatus[]).includes(initial.status)
           ? initial.status
           : "pendente",
+        pago: !!initial.pago,
       });
     } else {
       setV({ ...empty, dataHora: toLocalInput(new Date().toISOString()) });
