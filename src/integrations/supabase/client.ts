@@ -31,5 +31,6 @@ export type DeliveryRow = {
   lat: number | null;
   lng: number | null;
   status: "pendente" | "em_rota" | "entregue" | "cancelada";
+  pago: boolean | null;
   criado_em: string;
 };
