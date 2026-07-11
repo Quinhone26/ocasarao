@@ -363,6 +363,24 @@ export function DeliveryForm({
           />
         </div>
       </div>
+      <label
+        htmlFor="pago-switch"
+        className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 cursor-pointer"
+      >
+        <div className="min-w-0">
+          <span className="text-sm font-medium">Pagamento recebido</span>
+          <p className="text-xs text-muted-foreground">
+            Marque se o cliente já pagou (ex: Pix antecipado).
+          </p>
+        </div>
+        <input
+          id="pago-switch"
+          type="checkbox"
+          className="h-5 w-9 shrink-0 cursor-pointer accent-primary"
+          checked={v.pago}
+          onChange={(e) => set("pago", e.target.checked)}
+        />
+      </label>
       {(() => {
         const digits = normalizeCep(v.cep);
         const missing = digits.length > 0 && digits.length < 8;
