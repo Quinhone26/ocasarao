@@ -22,6 +22,7 @@ export interface Delivery {
   lat: number | null;
   lng: number | null;
   status: DeliveryStatus;
+  pago: boolean;
   criadoEm: string;
 }
 
