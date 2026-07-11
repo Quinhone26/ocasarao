@@ -71,7 +71,7 @@ export function printComanda(d: Delivery | (Omit<Delivery, "id" | "criadoEm"> & 
 <body>
   <div class="wrap">
     <div class="center">
-      <h1>RotaExpress</h1>
+      <h1>${esc(company.nome || "RotaExpress")}</h1>
       <div class="muted">Comanda de Entrega</div>
       <div class="muted">${esc(criado)}</div>
     </div>
