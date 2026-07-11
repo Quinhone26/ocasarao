@@ -151,6 +151,7 @@ function toRow(d: Partial<Delivery>): Partial<DeliveryRow> {
   if (d.lat !== undefined) r.lat = d.lat;
   if (d.lng !== undefined) r.lng = d.lng;
   if (d.status !== undefined) r.status = d.status;
+  if (d.pago !== undefined) r.pago = d.pago;
   if (d.criadoEm !== undefined) r.criado_em = d.criadoEm;
   return r;
 }
