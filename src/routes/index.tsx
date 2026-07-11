@@ -124,6 +124,20 @@ function Index() {
     return { total, entregues, pendentes, canceladas, receita, taxa: total ? Math.round((entregues / total) * 100) : 0 };
   }, [dayItems]);
 
+  // Resumo agrupado por dia (todos os dias com entregas)
+  const daysSummary = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const d of items) {
+      const dt = new Date(d.dataHora);
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const key = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+      map.set(key, (map.get(key) ?? 0) + 1);
+    }
+    return Array.from(map.entries())
+      .map(([day, count]) => ({ day, count }))
+      .sort((a, b) => (a.day < b.day ? 1 : -1));
+  }, [items]);
+
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
