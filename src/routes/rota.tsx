@@ -110,6 +110,7 @@ function RotaPage() {
     polyline: string;
   } | null>(null);
   const [mapUnavailable, setMapUnavailable] = useState(false);
+  const [adjustingId, setAdjustingId] = useState<string | null>(null);
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
   const overlaysRef = useRef<Array<google.maps.Marker | google.maps.Polyline>>([]);
