@@ -486,22 +486,22 @@ export function DeliveryForm({
       })()}
       <div className="space-y-1.5">
         <Label htmlFor="endereco">Endereço *</Label>
-        <Input id="endereco" value={v.endereco} onChange={(e) => set("endereco", e.target.value)} required maxLength={200} />
+        <Input id="endereco" value={v.endereco} onChange={(e) => setAddressFields({ endereco: e.target.value })} required maxLength={200} />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="numero">Número</Label>
-          <Input id="numero" value={v.numero} onChange={(e) => set("numero", e.target.value)} maxLength={20} />
+          <Input id="numero" value={v.numero} onChange={(e) => setAddressFields({ numero: e.target.value })} maxLength={20} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="bairro">Bairro</Label>
-          <Input id="bairro" value={v.bairro} onChange={(e) => set("bairro", e.target.value)} maxLength={100} />
+          <Input id="bairro" value={v.bairro} onChange={(e) => setAddressFields({ bairro: e.target.value })} maxLength={100} />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="cidade">Cidade</Label>
-          <Input id="cidade" value={v.cidade} onChange={(e) => set("cidade", e.target.value)} maxLength={100} />
+          <Input id="cidade" value={v.cidade} onChange={(e) => setAddressFields({ cidade: e.target.value })} maxLength={100} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="complemento">Complemento</Label>
