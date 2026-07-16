@@ -150,15 +150,23 @@ export function DeliveryForm({
     return searchClientes(suggestions, q);
   })();
   const pickCliente = (c: Cliente) => {
+    const nextAddress = {
+      cep: c.cep,
+      endereco: c.endereco,
+      numero: c.numero,
+      bairro: c.bairro,
+      cidade: c.cidade,
+    };
+    addressKeyWithCoords.current = addressKey(nextAddress);
     setV((p) => ({
       ...p,
       cliente: c.cliente,
       telefone: formatPhone(c.telefone),
-      cep: c.cep || p.cep,
-      endereco: c.endereco || p.endereco,
-      numero: c.numero || p.numero,
-      bairro: c.bairro || p.bairro,
-      cidade: c.cidade || p.cidade,
+      cep: nextAddress.cep || p.cep,
+      endereco: nextAddress.endereco || p.endereco,
+      numero: nextAddress.numero || p.numero,
+      bairro: nextAddress.bairro || p.bairro,
+      cidade: nextAddress.cidade || p.cidade,
       complemento: c.complemento || p.complemento,
       lat: c.lat ?? p.lat,
       lng: c.lng ?? p.lng,
@@ -210,7 +218,13 @@ export function DeliveryForm({
           if (!p.cidade.trim() && d.localidade?.trim()) {
             filled.cidade = `${d.localidade}${d.uf ? "/" + d.uf : ""}`;
           }
-          return { ...p, ...filled };
+          const next = { ...p, ...filled };
+          const original = addressKeyWithCoords.current;
+          const hasCoords = p.lat != null || p.lng != null;
+          if (hasCoords && original && addressKey(next) !== original) {
+            return { ...next, lat: null, lng: null };
+          }
+          return next;
         });
         setCepData(d);
         if (!r.fromCache) {
@@ -228,7 +242,7 @@ export function DeliveryForm({
 
   const handleCepChange = (raw: string) => {
     const digits = normalizeCep(raw);
-    setV((p) => ({ ...p, cep: formatCep(digits) }));
+    setAddressFields({ cep: formatCep(digits) });
     if (cepError) setCepError(null);
     if (digits.length === 8 && digits !== lastLookup.current) {
       lastLookup.current = digits;
@@ -252,7 +266,7 @@ export function DeliveryForm({
   const cepBlur = () => {
     const digits = normalizeCep(v.cep);
     // Reformata para o padrão 00000-000 ao sair do campo.
-    setV((p) => ({ ...p, cep: formatCep(digits) }));
+    setAddressFields({ cep: formatCep(digits) });
     if (digits.length === 0) return;
     if (!isValidCep(digits)) {
       setCepError({
