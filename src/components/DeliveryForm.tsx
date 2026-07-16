@@ -41,6 +41,12 @@ export interface DeliveryFormValues {
   pago: boolean;
 }
 
+function addressKey(v: Pick<DeliveryFormValues, "cep" | "endereco" | "numero" | "bairro" | "cidade">): string {
+  return [normalizeCep(v.cep), norm(v.endereco), norm(v.numero), norm(v.bairro), norm(v.cidade)]
+    .filter(Boolean)
+    .join("|");
+}
+
 function toLocalInput(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
@@ -87,10 +93,11 @@ export function DeliveryForm({
   const cepAbort = useRef<AbortController | null>(null);
   const lastLookup = useRef<string>("");
   const [cepData, setCepData] = useState<CepResult | null>(null);
+  const addressKeyWithCoords = useRef("");
 
   useEffect(() => {
     if (initial) {
-      setV({
+      const next = {
         cliente: initial.cliente,
         telefone: formatPhone(initial.telefone),
         cep: initial.cep ?? "",
@@ -109,14 +116,31 @@ export function DeliveryForm({
           ? initial.status
           : "pendente",
         pago: !!initial.pago,
-      });
+      };
+      addressKeyWithCoords.current = addressKey(next);
+      setV(next);
     } else {
+      addressKeyWithCoords.current = "";
       setV({ ...empty, dataHora: toLocalInput(new Date().toISOString()) });
     }
   }, [initial]);
 
   const set = <K extends keyof DeliveryFormValues>(k: K, val: DeliveryFormValues[K]) =>
     setV((p) => ({ ...p, [k]: val }));
+
+  const setAddressFields = (
+    patch: Partial<Pick<DeliveryFormValues, "cep" | "endereco" | "numero" | "bairro" | "cidade">>,
+  ) => {
+    setV((p) => {
+      const next = { ...p, ...patch };
+      const original = addressKeyWithCoords.current;
+      const hasCoords = p.lat != null || p.lng != null;
+      if (hasCoords && original && addressKey(next) !== original) {
+        return { ...next, lat: null, lng: null };
+      }
+      return next;
+    });
+  };
 
   // Autocomplete de clientes já cadastrados (só em novo cadastro).
   const [suggestField, setSuggestField] = useState<null | "cliente" | "telefone">(null);
