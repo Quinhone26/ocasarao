@@ -523,12 +523,11 @@ export function DeliveryForm({
         }
         if (diffs.length === 0) return null;
         const applyCep = () => {
-          setV((p) => ({
-            ...p,
-            endereco: cepData.logradouro || p.endereco,
-            bairro: cepData.bairro || p.bairro,
-            cidade: cepCidade || p.cidade,
-          }));
+          setAddressFields({
+            endereco: cepData.logradouro || v.endereco,
+            bairro: cepData.bairro || v.bairro,
+            cidade: cepCidade || v.cidade,
+          });
           toast.success("Endereço substituído pelos dados do CEP");
         };
         return (
