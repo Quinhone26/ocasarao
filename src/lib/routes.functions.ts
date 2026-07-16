@@ -70,7 +70,11 @@ async function geocode(
   address: string,
   key: string,
   lovableKey: string,
-  { allowPartial = true }: { allowPartial?: boolean } = {},
+  {
+    allowPartial = true,
+    expectedStreet = "",
+    expectedCep = "",
+  }: { allowPartial?: boolean; expectedStreet?: string; expectedCep?: string } = {},
 ): Promise<{ location: LatLng | null; diag: GeocodeDiag }> {
   const url = `https://connector-gateway.lovable.dev/google_maps/maps/api/geocode/json?address=${encodeURIComponent(
     address,
@@ -104,6 +108,11 @@ async function geocode(
       };
       partial_match?: boolean;
       types?: string[];
+      address_components?: Array<{
+        long_name?: string;
+        short_name?: string;
+        types?: string[];
+      }>;
     }>;
   };
   diag.status = json.status ?? "UNKNOWN";
@@ -127,6 +136,24 @@ async function geocode(
     types: chosen.types,
     location: chosen.geometry?.location,
   };
+  const route = chosen.address_components?.find((c) => c.types?.includes("route"));
+  const postalCode = chosen.address_components?.find((c) =>
+    c.types?.includes("postal_code"),
+  );
+  const resultStreet = route?.long_name ?? route?.short_name ?? "";
+  const resultCep = postalCode?.long_name ?? postalCode?.short_name ?? "";
+  const hasExpectedStreet = normalizeStreet(expectedStreet).length > 0;
+  const hasResultStreet = normalizeStreet(resultStreet).length > 0;
+  if (hasExpectedStreet && hasResultStreet && !streetMatches(expectedStreet, resultStreet)) {
+    diag.matchType = "none";
+    diag.error = `Google retornou outra rua: ${resultStreet}. Esperado: ${expectedStreet}.`;
+    return { location: null, diag };
+  }
+  if (!hasResultStreet && expectedCep && resultCep && !cepMatches(expectedCep, resultCep)) {
+    diag.matchType = "none";
+    diag.error = `Google retornou CEP diferente: ${resultCep}. Esperado: ${expectedCep}.`;
+    return { location: null, diag };
+  }
   return { location: chosen.geometry?.location ?? null, diag };
 }
 
