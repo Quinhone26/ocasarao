@@ -118,10 +118,14 @@ export const optimizeRoute = createServerFn({ method: "POST" })
       }),
     );
 
-    const failed = resolved.filter((r) => !r.latLng).map((r) => r.id);
-    if (failed.length) {
+    const failedIds = new Set(resolved.filter((r) => !r.latLng).map((r) => r.id));
+    if (failedIds.size) {
+      const details = data.stops
+        .filter((s) => failedIds.has(s.id))
+        .map((s) => `• ${s.address}${s.cep ? ` (CEP ${s.cep})` : ""}`)
+        .join("\n");
       throw new Error(
-        `Não foi possível localizar ${failed.length} endereço(s). Confira rua/CEP.`,
+        `Não foi possível localizar ${failedIds.size} endereço(s):\n${details}\nConfira rua/número/CEP.`,
       );
     }
 
