@@ -252,8 +252,10 @@ function RotaPage() {
 
     } catch (err) {
       console.error(err);
+      const msg = err instanceof Error ? err.message : "Erro inesperado";
       toast.error("Falha ao calcular rota", {
-        description: err instanceof Error ? err.message : undefined,
+        description: <span className="whitespace-pre-line">{msg}</span>,
+        duration: 12000,
       });
     } finally {
       setComputing(false);
