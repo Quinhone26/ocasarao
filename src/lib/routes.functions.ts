@@ -22,6 +22,7 @@ async function geocode(
   address: string,
   key: string,
   lovableKey: string,
+  { allowPartial = true }: { allowPartial?: boolean } = {},
 ): Promise<LatLng | null> {
   const url = `https://connector-gateway.lovable.dev/google_maps/maps/api/geocode/json?address=${encodeURIComponent(
     address,
@@ -41,10 +42,11 @@ async function geocode(
     }>;
   };
   if (json.status !== "OK" || !json.results?.length) return null;
-  // Descarta partial_match — geralmente indica que a rua não foi encontrada.
-  const exact = json.results.find((r) => !r.partial_match) ?? null;
-  const loc = exact?.geometry?.location;
-  return loc ?? null;
+  // Prefere match exato; se só houver partial_match, aceita mesmo assim
+  // (CEP costuma retornar partial_match por cobrir trecho de rua).
+  const exact = json.results.find((r) => !r.partial_match);
+  const chosen = exact ?? (allowPartial ? json.results[0] : null);
+  return chosen?.geometry?.location ?? null;
 }
 
 // Fallback via OpenStreetMap Nominatim — usado quando o Google não localiza
