@@ -6,6 +6,8 @@ const stopSchema = z.object({
   lat: z.number().nullable(),
   lng: z.number().nullable(),
   address: z.string().min(1),
+  street: z.string().default(""),
+  number: z.string().default(""),
   cep: z.string().default(""),
   cidade: z.string().default(""),
   label: z.string().default(""),
@@ -35,11 +37,44 @@ type GeocodeDiag = {
   error?: string;
 };
 
+function normalizeStreet(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\b(r|rua|av|avenida|travessa|tv|estrada|rodovia|praca)\b\.?/g, " ")
+    .replace(/\d+/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function normalizeCep(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
+function streetMatches(inputStreet: string, reverseStreet?: string): boolean {
+  const a = normalizeStreet(inputStreet);
+  const b = normalizeStreet(reverseStreet ?? "");
+  if (!a || !b) return false;
+  return a.includes(b) || b.includes(a);
+}
+
+function cepMatches(inputCep: string, reverseCep?: string): boolean {
+  const a = normalizeCep(inputCep);
+  const b = normalizeCep(reverseCep ?? "");
+  return a.length === 8 && b.length === 8 && a === b;
+}
+
 async function geocode(
   address: string,
   key: string,
   lovableKey: string,
-  { allowPartial = true }: { allowPartial?: boolean } = {},
+  {
+    allowPartial = true,
+    expectedStreet = "",
+    expectedCep = "",
+  }: { allowPartial?: boolean; expectedStreet?: string; expectedCep?: string } = {},
 ): Promise<{ location: LatLng | null; diag: GeocodeDiag }> {
   const url = `https://connector-gateway.lovable.dev/google_maps/maps/api/geocode/json?address=${encodeURIComponent(
     address,
@@ -73,6 +108,11 @@ async function geocode(
       };
       partial_match?: boolean;
       types?: string[];
+      address_components?: Array<{
+        long_name?: string;
+        short_name?: string;
+        types?: string[];
+      }>;
     }>;
   };
   diag.status = json.status ?? "UNKNOWN";
@@ -96,7 +136,102 @@ async function geocode(
     types: chosen.types,
     location: chosen.geometry?.location,
   };
+  const route = chosen.address_components?.find((c) => c.types?.includes("route"));
+  const postalCode = chosen.address_components?.find((c) =>
+    c.types?.includes("postal_code"),
+  );
+  const resultStreet = route?.long_name ?? route?.short_name ?? "";
+  const resultCep = postalCode?.long_name ?? postalCode?.short_name ?? "";
+  const hasExpectedStreet = normalizeStreet(expectedStreet).length > 0;
+  const hasResultStreet = normalizeStreet(resultStreet).length > 0;
+  if (hasExpectedStreet && hasResultStreet && !streetMatches(expectedStreet, resultStreet)) {
+    diag.matchType = "none";
+    diag.error = `Google retornou outra rua: ${resultStreet}. Esperado: ${expectedStreet}.`;
+    return { location: null, diag };
+  }
+  if (!hasResultStreet && expectedCep && resultCep && !cepMatches(expectedCep, resultCep)) {
+    diag.matchType = "none";
+    diag.error = `Google retornou CEP diferente: ${resultCep}. Esperado: ${expectedCep}.`;
+    return { location: null, diag };
+  }
   return { location: chosen.geometry?.location ?? null, diag };
+}
+
+async function validateSavedCoords(
+  stop: z.infer<typeof stopSchema>,
+  key: string,
+  lovableKey: string,
+): Promise<{ valid: boolean; diag: GeocodeDiag }> {
+  const query = `${stop.lat},${stop.lng}`;
+  const url = `https://connector-gateway.lovable.dev/google_maps/maps/api/geocode/json?latlng=${encodeURIComponent(
+    query,
+  )}&result_type=street_address|premise|route&region=br`;
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${lovableKey}`,
+      "X-Connection-Api-Key": key,
+    },
+  });
+  const diag: GeocodeDiag = {
+    query,
+    status: "UNKNOWN",
+    httpStatus: res.status,
+    resultsCount: 0,
+    matchType: "none",
+  };
+  if (!res.ok) {
+    diag.error = (await res.text()).slice(0, 200);
+    return { valid: true, diag };
+  }
+  const json = (await res.json()) as {
+    status?: string;
+    error_message?: string;
+    results?: Array<{
+      formatted_address?: string;
+      place_id?: string;
+      geometry?: {
+        location?: { lat: number; lng: number };
+        location_type?: string;
+      };
+      partial_match?: boolean;
+      types?: string[];
+      address_components?: Array<{
+        long_name?: string;
+        short_name?: string;
+        types?: string[];
+      }>;
+    }>;
+  };
+  diag.status = json.status ?? "UNKNOWN";
+  if (json.error_message) diag.error = json.error_message;
+  diag.resultsCount = json.results?.length ?? 0;
+  const chosen = json.results?.[0];
+  if (!chosen) return { valid: true, diag };
+
+  const route = chosen.address_components?.find((c) => c.types?.includes("route"));
+  const postalCode = chosen.address_components?.find((c) =>
+    c.types?.includes("postal_code"),
+  );
+  const reverseStreet = route?.long_name ?? route?.short_name ?? "";
+  const reverseCep = postalCode?.long_name ?? postalCode?.short_name ?? "";
+  const hasReverseStreet = normalizeStreet(reverseStreet).length > 0;
+  const valid =
+    streetMatches(stop.street || stop.address, reverseStreet) ||
+    (!hasReverseStreet && cepMatches(stop.cep, reverseCep));
+
+  diag.matchType = valid ? "exact" : "none";
+  diag.chosen = {
+    formattedAddress: chosen.formatted_address,
+    placeId: chosen.place_id,
+    locationType: chosen.geometry?.location_type,
+    partialMatch: chosen.partial_match,
+    types: chosen.types,
+    location: chosen.geometry?.location,
+  };
+  if (!valid) {
+    diag.error = `Coordenada salva não confere com a entrega. Rua salva no pino: ${reverseStreet || "desconhecida"}; CEP do pino: ${reverseCep || "desconhecido"}.`;
+  }
+  return { valid, diag };
 }
 
 // Fallback via OpenStreetMap Nominatim — usado quando o Google não localiza
@@ -171,16 +306,37 @@ export const optimizeRoute = createServerFn({ method: "POST" })
           console.log(`[optimizeRoute] ${who} | ${msg}`, extra ?? "");
 
         if (s.lat != null && s.lng != null) {
-          log("usando coordenadas salvas (source=input)", {
+          const reverse = await validateSavedCoords(
+            s,
+            GOOGLE_MAPS_API_KEY,
+            LOVABLE_API_KEY,
+          );
+          attempts.push({ strategy: "google:reverse_saved", diag: reverse.diag });
+          log(
+            `google:reverse_saved status=${reverse.diag.status} match=${reverse.diag.matchType} results=${reverse.diag.resultsCount}`,
+            {
+              query: reverse.diag.query,
+              chosen: reverse.diag.chosen,
+              error: reverse.diag.error,
+            },
+          );
+          if (reverse.valid) {
+            log("usando coordenadas salvas (source=input)", {
+              lat: s.lat,
+              lng: s.lng,
+            });
+            return {
+              id: s.id,
+              latLng: { lat: s.lat, lng: s.lng },
+              source: "input" as const,
+              attempts,
+            };
+          }
+          log("ignorando coordenadas salvas — endereço/pino não conferem", {
             lat: s.lat,
             lng: s.lng,
+            address: s.address,
           });
-          return {
-            id: s.id,
-            latLng: { lat: s.lat, lng: s.lng },
-            source: "input" as const,
-            attempts,
-          };
         }
 
         // 1º: endereço completo (rua+número+bairro+cidade+CEP)
@@ -188,6 +344,7 @@ export const optimizeRoute = createServerFn({ method: "POST" })
           s.address,
           GOOGLE_MAPS_API_KEY,
           LOVABLE_API_KEY,
+          { allowPartial: false, expectedStreet: s.street, expectedCep: s.cep },
         );
         attempts.push({ strategy: "google:address", diag: addrRes.diag });
         log(

@@ -41,6 +41,12 @@ export interface DeliveryFormValues {
   pago: boolean;
 }
 
+function addressKey(v: Pick<DeliveryFormValues, "cep" | "endereco" | "numero" | "bairro" | "cidade">): string {
+  return [normalizeCep(v.cep), norm(v.endereco), norm(v.numero), norm(v.bairro), norm(v.cidade)]
+    .filter(Boolean)
+    .join("|");
+}
+
 function toLocalInput(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
@@ -87,10 +93,11 @@ export function DeliveryForm({
   const cepAbort = useRef<AbortController | null>(null);
   const lastLookup = useRef<string>("");
   const [cepData, setCepData] = useState<CepResult | null>(null);
+  const addressKeyWithCoords = useRef("");
 
   useEffect(() => {
     if (initial) {
-      setV({
+      const next = {
         cliente: initial.cliente,
         telefone: formatPhone(initial.telefone),
         cep: initial.cep ?? "",
@@ -109,14 +116,31 @@ export function DeliveryForm({
           ? initial.status
           : "pendente",
         pago: !!initial.pago,
-      });
+      };
+      addressKeyWithCoords.current = addressKey(next);
+      setV(next);
     } else {
+      addressKeyWithCoords.current = "";
       setV({ ...empty, dataHora: toLocalInput(new Date().toISOString()) });
     }
   }, [initial]);
 
   const set = <K extends keyof DeliveryFormValues>(k: K, val: DeliveryFormValues[K]) =>
     setV((p) => ({ ...p, [k]: val }));
+
+  const setAddressFields = (
+    patch: Partial<Pick<DeliveryFormValues, "cep" | "endereco" | "numero" | "bairro" | "cidade">>,
+  ) => {
+    setV((p) => {
+      const next = { ...p, ...patch };
+      const original = addressKeyWithCoords.current;
+      const hasCoords = p.lat != null || p.lng != null;
+      if (hasCoords && original && addressKey(next) !== original) {
+        return { ...next, lat: null, lng: null };
+      }
+      return next;
+    });
+  };
 
   // Autocomplete de clientes já cadastrados (só em novo cadastro).
   const [suggestField, setSuggestField] = useState<null | "cliente" | "telefone">(null);
@@ -126,15 +150,23 @@ export function DeliveryForm({
     return searchClientes(suggestions, q);
   })();
   const pickCliente = (c: Cliente) => {
+    const nextAddress = {
+      cep: c.cep,
+      endereco: c.endereco,
+      numero: c.numero,
+      bairro: c.bairro,
+      cidade: c.cidade,
+    };
+    addressKeyWithCoords.current = addressKey(nextAddress);
     setV((p) => ({
       ...p,
       cliente: c.cliente,
       telefone: formatPhone(c.telefone),
-      cep: c.cep || p.cep,
-      endereco: c.endereco || p.endereco,
-      numero: c.numero || p.numero,
-      bairro: c.bairro || p.bairro,
-      cidade: c.cidade || p.cidade,
+      cep: nextAddress.cep || p.cep,
+      endereco: nextAddress.endereco || p.endereco,
+      numero: nextAddress.numero || p.numero,
+      bairro: nextAddress.bairro || p.bairro,
+      cidade: nextAddress.cidade || p.cidade,
       complemento: c.complemento || p.complemento,
       lat: c.lat ?? p.lat,
       lng: c.lng ?? p.lng,
@@ -186,7 +218,13 @@ export function DeliveryForm({
           if (!p.cidade.trim() && d.localidade?.trim()) {
             filled.cidade = `${d.localidade}${d.uf ? "/" + d.uf : ""}`;
           }
-          return { ...p, ...filled };
+          const next = { ...p, ...filled };
+          const original = addressKeyWithCoords.current;
+          const hasCoords = p.lat != null || p.lng != null;
+          if (hasCoords && original && addressKey(next) !== original) {
+            return { ...next, lat: null, lng: null };
+          }
+          return next;
         });
         setCepData(d);
         if (!r.fromCache) {
@@ -204,7 +242,7 @@ export function DeliveryForm({
 
   const handleCepChange = (raw: string) => {
     const digits = normalizeCep(raw);
-    setV((p) => ({ ...p, cep: formatCep(digits) }));
+    setAddressFields({ cep: formatCep(digits) });
     if (cepError) setCepError(null);
     if (digits.length === 8 && digits !== lastLookup.current) {
       lastLookup.current = digits;
@@ -228,7 +266,7 @@ export function DeliveryForm({
   const cepBlur = () => {
     const digits = normalizeCep(v.cep);
     // Reformata para o padrão 00000-000 ao sair do campo.
-    setV((p) => ({ ...p, cep: formatCep(digits) }));
+    setAddressFields({ cep: formatCep(digits) });
     if (digits.length === 0) return;
     if (!isValidCep(digits)) {
       setCepError({
@@ -448,22 +486,22 @@ export function DeliveryForm({
       })()}
       <div className="space-y-1.5">
         <Label htmlFor="endereco">Endereço *</Label>
-        <Input id="endereco" value={v.endereco} onChange={(e) => set("endereco", e.target.value)} required maxLength={200} />
+        <Input id="endereco" value={v.endereco} onChange={(e) => setAddressFields({ endereco: e.target.value })} required maxLength={200} />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="numero">Número</Label>
-          <Input id="numero" value={v.numero} onChange={(e) => set("numero", e.target.value)} maxLength={20} />
+          <Input id="numero" value={v.numero} onChange={(e) => setAddressFields({ numero: e.target.value })} maxLength={20} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="bairro">Bairro</Label>
-          <Input id="bairro" value={v.bairro} onChange={(e) => set("bairro", e.target.value)} maxLength={100} />
+          <Input id="bairro" value={v.bairro} onChange={(e) => setAddressFields({ bairro: e.target.value })} maxLength={100} />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="cidade">Cidade</Label>
-          <Input id="cidade" value={v.cidade} onChange={(e) => set("cidade", e.target.value)} maxLength={100} />
+          <Input id="cidade" value={v.cidade} onChange={(e) => setAddressFields({ cidade: e.target.value })} maxLength={100} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="complemento">Complemento</Label>
@@ -485,12 +523,11 @@ export function DeliveryForm({
         }
         if (diffs.length === 0) return null;
         const applyCep = () => {
-          setV((p) => ({
-            ...p,
-            endereco: cepData.logradouro || p.endereco,
-            bairro: cepData.bairro || p.bairro,
-            cidade: cepCidade || p.cidade,
-          }));
+          setAddressFields({
+            endereco: cepData.logradouro || v.endereco,
+            bairro: cepData.bairro || v.bairro,
+            cidade: cepCidade || v.cidade,
+          });
           toast.success("Endereço substituído pelos dados do CEP");
         };
         return (
