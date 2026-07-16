@@ -194,6 +194,7 @@ function RotaPage() {
         lng: d.lng,
         cep: d.cep,
         cidade: d.cidade,
+        label: d.cliente,
         address:
           [
             `${d.endereco}${d.numero ? ", " + d.numero : ""}`,
