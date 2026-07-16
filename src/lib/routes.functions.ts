@@ -123,7 +123,11 @@ export const optimizeRoute = createServerFn({ method: "POST" })
     if (failedIds.size) {
       const details = data.stops
         .filter((s) => failedIds.has(s.id))
-        .map((s) => `• ${s.address}${s.cep ? ` (CEP ${s.cep})` : ""}`)
+        .map((s) => {
+          const who = s.label ? `${s.label} — ` : "";
+          const cep = s.cep ? ` (CEP ${s.cep})` : "";
+          return `• ${who}${s.address}${cep}`;
+        })
         .join("\n");
       throw new Error(
         `Não foi possível localizar ${failedIds.size} endereço(s):\n${details}\nConfira rua/número/CEP.`,
