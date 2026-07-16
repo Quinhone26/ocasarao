@@ -104,8 +104,14 @@ async function geocode(
 // e não depende da chave do Google.
 async function geocodeOSM(
   address: string,
-): Promise<{ location: LatLng | null; diag: Record<string, unknown> }> {
-  const diag: Record<string, unknown> = { query: address, provider: "osm" };
+): Promise<{ location: LatLng | null; diag: GeocodeDiag }> {
+  const diag: GeocodeDiag = {
+    query: address,
+    status: "UNKNOWN",
+    httpStatus: 0,
+    resultsCount: 0,
+    matchType: "none",
+  };
   try {
     const url =
       `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&addressdetails=1&q=${encodeURIComponent(address)}`;
@@ -116,6 +122,7 @@ async function geocodeOSM(
       },
     });
     diag.httpStatus = res.status;
+    diag.status = res.ok ? "OK" : "HTTP_ERROR";
     if (!res.ok) return { location: null, diag };
     const arr = (await res.json()) as Array<{
       lat: string;
@@ -131,11 +138,10 @@ async function geocodeOSM(
     const lat = parseFloat(first.lat);
     const lng = parseFloat(first.lon);
     if (Number.isNaN(lat) || Number.isNaN(lng)) return { location: null, diag };
+    diag.matchType = "exact";
     diag.chosen = {
-      displayName: first.display_name,
-      type: first.type,
-      class: first.class,
-      importance: first.importance,
+      formattedAddress: first.display_name,
+      types: [first.class, first.type].filter(Boolean) as string[],
       location: { lat, lng },
     };
     return { location: { lat, lng }, diag };
