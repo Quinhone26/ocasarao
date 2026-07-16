@@ -93,13 +93,15 @@ export const optimizeRoute = createServerFn({ method: "POST" })
         if (s.lat != null && s.lng != null) {
           return { id: s.id, latLng: { lat: s.lat, lng: s.lng }, source: "input" as const };
         }
+        // 1º: endereço completo (rua+número+bairro+cidade+CEP) — mais preciso.
+        const byAddr = await geocode(s.address, GOOGLE_MAPS_API_KEY, LOVABLE_API_KEY);
+        if (byAddr) {
+          return { id: s.id, latLng: byAddr, source: "address" as const };
+        }
+        // 2º: CEP puro — cai no centro da área do CEP, útil quando a rua
+        // não é reconhecida pelo Google.
         if (s.cep) {
-          const cepQuery = [
-            s.cep,
-            s.cidade || "Umuarama",
-            "PR",
-            "Brasil",
-          ]
+          const cepQuery = [s.cep, s.cidade || "Umuarama", "PR", "Brasil"]
             .filter(Boolean)
             .join(", ");
           const byCep = await geocode(cepQuery, GOOGLE_MAPS_API_KEY, LOVABLE_API_KEY);
@@ -107,12 +109,7 @@ export const optimizeRoute = createServerFn({ method: "POST" })
             return { id: s.id, latLng: byCep, source: "cep" as const };
           }
         }
-        const fallback = await geocode(s.address, GOOGLE_MAPS_API_KEY, LOVABLE_API_KEY);
-        if (fallback) {
-          return { id: s.id, latLng: fallback, source: "address" as const };
-        }
-        // Último recurso: OpenStreetMap (Nominatim). Cobre ruas novas ou com
-        // nome diferente do cadastro do Google.
+        // 3º: OpenStreetMap — cobre ruas novas que o Google não tem.
         const osm = await geocodeOSM(s.address);
         if (osm) {
           return { id: s.id, latLng: osm, source: "osm" as const };
