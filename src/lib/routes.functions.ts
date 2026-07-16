@@ -187,9 +187,10 @@ async function validateSavedCoords(
   );
   const reverseStreet = route?.long_name ?? route?.short_name ?? "";
   const reverseCep = postalCode?.long_name ?? postalCode?.short_name ?? "";
+  const hasReverseStreet = normalizeStreet(reverseStreet).length > 0;
   const valid =
     streetMatches(stop.street || stop.address, reverseStreet) ||
-    cepMatches(stop.cep, reverseCep);
+    (!hasReverseStreet && cepMatches(stop.cep, reverseCep));
 
   diag.matchType = valid ? "exact" : "none";
   diag.chosen = {
@@ -316,7 +317,7 @@ export const optimizeRoute = createServerFn({ method: "POST" })
           s.address,
           GOOGLE_MAPS_API_KEY,
           LOVABLE_API_KEY,
-          { allowPartial: false },
+          { allowPartial: false, expectedStreet: s.street, expectedCep: s.cep },
         );
         attempts.push({ strategy: "google:address", diag: addrRes.diag });
         log(
