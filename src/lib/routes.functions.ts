@@ -8,6 +8,7 @@ const stopSchema = z.object({
   address: z.string().min(1),
   cep: z.string().default(""),
   cidade: z.string().default(""),
+  label: z.string().default(""),
 });
 
 const inputSchema = z.object({
@@ -118,10 +119,18 @@ export const optimizeRoute = createServerFn({ method: "POST" })
       }),
     );
 
-    const failed = resolved.filter((r) => !r.latLng).map((r) => r.id);
-    if (failed.length) {
+    const failedIds = new Set(resolved.filter((r) => !r.latLng).map((r) => r.id));
+    if (failedIds.size) {
+      const details = data.stops
+        .filter((s) => failedIds.has(s.id))
+        .map((s) => {
+          const who = s.label ? `${s.label} — ` : "";
+          const cep = s.cep ? ` (CEP ${s.cep})` : "";
+          return `• ${who}${s.address}${cep}`;
+        })
+        .join("\n");
       throw new Error(
-        `Não foi possível localizar ${failed.length} endereço(s). Confira rua/CEP.`,
+        `Não foi possível localizar ${failedIds.size} endereço(s):\n${details}\nConfira rua/número/CEP.`,
       );
     }
 
