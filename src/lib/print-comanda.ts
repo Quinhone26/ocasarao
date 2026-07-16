@@ -54,14 +54,14 @@ export function printComanda(d: Delivery | (Omit<Delivery, "id" | "criadoEm"> & 
   h1 { margin: 0; font-size: 14px; letter-spacing: 0.5px; font-weight: 900; }
   h2 { margin: 6px 0 2px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; font-weight: 900; }
   .muted { color: #000; font-size: 10px; font-weight: 700; }
-  .row { display: flex; justify-content: space-between; gap: 4px; align-items: center; }
+  .row { display: flex; justify-content: center; gap: 6px; align-items: center; flex-wrap: wrap; }
   .divider { border-top: 2px dashed #000; margin: 5px 0; }
   .box { border: 2px solid #000; padding: 3px 5px; margin-top: 4px; }
   .big { font-size: 12px; font-weight: 900; word-wrap: break-word; }
-  .total { font-size: 11px; font-weight: 900; }
+  .total { font-size: 10px; font-weight: 900; }
   .obs { white-space: pre-wrap; font-weight: 700; word-wrap: break-word; }
-  .pago-yes { display: inline-block; border: 1px solid #000; padding: 1px 4px; font-weight: 900; font-size: 9px; letter-spacing: 0.3px; background: #000; color: #fff; }
-  .pago-no { display: inline-block; border: 1px solid #000; padding: 1px 4px; font-weight: 900; font-size: 9px; letter-spacing: 0.3px; background: #fff; color: #000; }
+  .pago-yes { display: inline-block; border: 1px solid #000; padding: 0 3px; font-weight: 900; font-size: 8px; letter-spacing: 0.2px; background: #000; color: #fff; }
+  .pago-no { display: inline-block; border: 1px solid #000; padding: 0 3px; font-weight: 900; font-size: 8px; letter-spacing: 0.2px; background: #fff; color: #000; }
   @media screen {
     body { background: #eee; padding: 20px; }
     .wrap { background: #fff; margin: 0 auto; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
