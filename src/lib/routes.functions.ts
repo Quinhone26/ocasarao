@@ -18,12 +18,29 @@ const inputSchema = z.object({
 
 type LatLng = { lat: number; lng: number };
 
+type GeocodeDiag = {
+  query: string;
+  status: string;
+  httpStatus: number;
+  resultsCount: number;
+  matchType: "exact" | "partial" | "none";
+  chosen?: {
+    formattedAddress?: string;
+    placeId?: string;
+    locationType?: string;
+    partialMatch?: boolean;
+    types?: string[];
+    location?: LatLng;
+  };
+  error?: string;
+};
+
 async function geocode(
   address: string,
   key: string,
   lovableKey: string,
   { allowPartial = true }: { allowPartial?: boolean } = {},
-): Promise<LatLng | null> {
+): Promise<{ location: LatLng | null; diag: GeocodeDiag }> {
   const url = `https://connector-gateway.lovable.dev/google_maps/maps/api/geocode/json?address=${encodeURIComponent(
     address,
   )}&region=br&components=country:BR`;
@@ -33,46 +50,98 @@ async function geocode(
       "X-Connection-Api-Key": key,
     },
   });
-  if (!res.ok) return null;
+  const diag: GeocodeDiag = {
+    query: address,
+    status: "UNKNOWN",
+    httpStatus: res.status,
+    resultsCount: 0,
+    matchType: "none",
+  };
+  if (!res.ok) {
+    diag.error = (await res.text()).slice(0, 200);
+    return { location: null, diag };
+  }
   const json = (await res.json()) as {
     status?: string;
+    error_message?: string;
     results?: Array<{
-      geometry?: { location?: { lat: number; lng: number } };
+      formatted_address?: string;
+      place_id?: string;
+      geometry?: {
+        location?: { lat: number; lng: number };
+        location_type?: string;
+      };
       partial_match?: boolean;
+      types?: string[];
     }>;
   };
-  if (json.status !== "OK" || !json.results?.length) return null;
-  // Prefere match exato; se só houver partial_match, aceita mesmo assim
-  // (CEP costuma retornar partial_match por cobrir trecho de rua).
+  diag.status = json.status ?? "UNKNOWN";
+  if (json.error_message) diag.error = json.error_message;
+  diag.resultsCount = json.results?.length ?? 0;
+  if (json.status !== "OK" || !json.results?.length) {
+    return { location: null, diag };
+  }
   const exact = json.results.find((r) => !r.partial_match);
   const chosen = exact ?? (allowPartial ? json.results[0] : null);
-  return chosen?.geometry?.location ?? null;
+  if (!chosen) {
+    diag.matchType = "none";
+    return { location: null, diag };
+  }
+  diag.matchType = chosen.partial_match ? "partial" : "exact";
+  diag.chosen = {
+    formattedAddress: chosen.formatted_address,
+    placeId: chosen.place_id,
+    locationType: chosen.geometry?.location_type,
+    partialMatch: chosen.partial_match,
+    types: chosen.types,
+    location: chosen.geometry?.location,
+  };
+  return { location: chosen.geometry?.location ?? null, diag };
 }
 
 // Fallback via OpenStreetMap Nominatim — usado quando o Google não localiza
 // nem pelo CEP nem pela rua. Nominatim tem cobertura boa de ruas novas no BR
 // e não depende da chave do Google.
-async function geocodeOSM(address: string): Promise<LatLng | null> {
+async function geocodeOSM(
+  address: string,
+): Promise<{ location: LatLng | null; diag: Record<string, unknown> }> {
+  const diag: Record<string, unknown> = { query: address, provider: "osm" };
   try {
     const url =
-      `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=${encodeURIComponent(address)}`;
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&addressdetails=1&q=${encodeURIComponent(address)}`;
     const res = await fetch(url, {
       headers: {
-        // Nominatim exige User-Agent identificando a aplicação.
         "User-Agent": "ocasarao-delivery/1.0 (contact via app)",
         "Accept-Language": "pt-BR",
       },
     });
-    if (!res.ok) return null;
-    const arr = (await res.json()) as Array<{ lat: string; lon: string }>;
+    diag.httpStatus = res.status;
+    if (!res.ok) return { location: null, diag };
+    const arr = (await res.json()) as Array<{
+      lat: string;
+      lon: string;
+      display_name?: string;
+      type?: string;
+      class?: string;
+      importance?: number;
+    }>;
+    diag.resultsCount = arr?.length ?? 0;
     const first = arr?.[0];
-    if (!first) return null;
+    if (!first) return { location: null, diag };
     const lat = parseFloat(first.lat);
     const lng = parseFloat(first.lon);
-    if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
-    return { lat, lng };
-  } catch {
-    return null;
+    if (Number.isNaN(lat) || Number.isNaN(lng)) return { location: null, diag };
+    diag.chosen = {
+      displayName: first.display_name,
+      type: first.type,
+      class: first.class,
+      importance: first.importance,
+      location: { lat, lng },
+    };
+    return { location: { lat, lng }, diag };
+  } catch (err) {
+    diag.error = err instanceof Error ? err.message : String(err);
+    return { location: null, diag };
   }
 }
 
@@ -85,38 +154,106 @@ export const optimizeRoute = createServerFn({ method: "POST" })
       throw new Error("Google Maps não configurado");
     }
 
-    // Geocodifica cada parada priorizando o CEP (cidade+UF), pois nomes de
-    // rua mudam mas o CEP permanece estável. Se o CEP falhar ou não existir,
-    // cai para rua+número como fallback.
     const resolved = await Promise.all(
       data.stops.map(async (s) => {
+        const who = s.label || s.id;
+        const attempts: Array<{
+          strategy: string;
+          diag: GeocodeDiag | Record<string, unknown>;
+        }> = [];
+        const log = (msg: string, extra?: unknown) =>
+          console.log(`[optimizeRoute] ${who} | ${msg}`, extra ?? "");
+
         if (s.lat != null && s.lng != null) {
-          return { id: s.id, latLng: { lat: s.lat, lng: s.lng }, source: "input" as const };
+          log("usando coordenadas salvas (source=input)", {
+            lat: s.lat,
+            lng: s.lng,
+          });
+          return {
+            id: s.id,
+            latLng: { lat: s.lat, lng: s.lng },
+            source: "input" as const,
+            attempts,
+          };
         }
-        // 1º: endereço completo (rua+número+bairro+cidade+CEP) — mais preciso.
-        const byAddr = await geocode(s.address, GOOGLE_MAPS_API_KEY, LOVABLE_API_KEY);
-        if (byAddr) {
-          return { id: s.id, latLng: byAddr, source: "address" as const };
+
+        // 1º: endereço completo (rua+número+bairro+cidade+CEP)
+        const addrRes = await geocode(
+          s.address,
+          GOOGLE_MAPS_API_KEY,
+          LOVABLE_API_KEY,
+        );
+        attempts.push({ strategy: "google:address", diag: addrRes.diag });
+        log(
+          `google:address status=${addrRes.diag.status} match=${addrRes.diag.matchType} results=${addrRes.diag.resultsCount}`,
+          {
+            query: addrRes.diag.query,
+            chosen: addrRes.diag.chosen,
+            error: addrRes.diag.error,
+          },
+        );
+        if (addrRes.location) {
+          return {
+            id: s.id,
+            latLng: addrRes.location,
+            source: "address" as const,
+            attempts,
+          };
         }
-        // 2º: CEP puro — cai no centro da área do CEP, útil quando a rua
-        // não é reconhecida pelo Google.
+
+        // 2º: CEP puro
         if (s.cep) {
           const cepQuery = [s.cep, s.cidade || "Umuarama", "PR", "Brasil"]
             .filter(Boolean)
             .join(", ");
-          const byCep = await geocode(cepQuery, GOOGLE_MAPS_API_KEY, LOVABLE_API_KEY);
-          if (byCep) {
-            return { id: s.id, latLng: byCep, source: "cep" as const };
+          const cepRes = await geocode(
+            cepQuery,
+            GOOGLE_MAPS_API_KEY,
+            LOVABLE_API_KEY,
+          );
+          attempts.push({ strategy: "google:cep", diag: cepRes.diag });
+          log(
+            `google:cep status=${cepRes.diag.status} match=${cepRes.diag.matchType} results=${cepRes.diag.resultsCount}`,
+            {
+              query: cepRes.diag.query,
+              chosen: cepRes.diag.chosen,
+              error: cepRes.diag.error,
+            },
+          );
+          if (cepRes.location) {
+            return {
+              id: s.id,
+              latLng: cepRes.location,
+              source: "cep" as const,
+              attempts,
+            };
           }
         }
-        // 3º: OpenStreetMap — cobre ruas novas que o Google não tem.
-        const osm = await geocodeOSM(s.address);
-        if (osm) {
-          return { id: s.id, latLng: osm, source: "osm" as const };
+
+        // 3º: OpenStreetMap
+        const osmRes = await geocodeOSM(s.address);
+        attempts.push({ strategy: "osm", diag: osmRes.diag });
+        log("osm", osmRes.diag);
+        if (osmRes.location) {
+          return {
+            id: s.id,
+            latLng: osmRes.location,
+            source: "osm" as const,
+            attempts,
+          };
         }
-        return { id: s.id, latLng: null, source: "failed" as const };
+
+        log("FALHA — nenhum geocoder localizou o endereço");
+        return {
+          id: s.id,
+          latLng: null,
+          source: "failed" as const,
+          attempts,
+        };
       }),
     );
+
+
 
     const failedIds = new Set(resolved.filter((r) => !r.latLng).map((r) => r.id));
     if (failedIds.size) {
