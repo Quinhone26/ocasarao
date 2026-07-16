@@ -560,21 +560,68 @@ function RotaPage() {
                         .join(" · ")}
                     </p>
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={() => markDelivered(s.delivery)}
-                    className="h-9 rounded-lg bg-status-delivered text-status-delivered-foreground hover:bg-status-delivered/90 shrink-0"
-                    aria-label="Marcar como entregue"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    {i === 0 ? "Entregue" : ""}
-                  </Button>
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setAdjustingId(s.delivery.id)}
+                      className="h-9 rounded-lg"
+                      aria-label="Ajustar pino no mapa"
+                      title="Ajustar pino no mapa"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => markDelivered(s.delivery)}
+                      className="h-9 rounded-lg bg-status-delivered text-status-delivered-foreground hover:bg-status-delivered/90"
+                      aria-label="Marcar como entregue"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      {i === 0 ? "Entregue" : ""}
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ol>
           </>
         )}
       </div>
+      {(() => {
+        const d = adjustingId
+          ? items.find((x) => x.id === adjustingId) ?? null
+          : null;
+        const initial =
+          d && d.lat != null && d.lng != null
+            ? { lat: d.lat, lng: d.lng }
+            : origin;
+        return (
+          <PinAdjustDialog
+            open={!!adjustingId}
+            onOpenChange={(v) => !v && setAdjustingId(null)}
+            initial={initial}
+            title={d?.cliente ?? ""}
+            addressLabel={
+              d
+                ? [
+                    `${d.endereco}${d.numero ? ", " + d.numero : ""}`,
+                    d.bairro,
+                    d.cidade,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")
+                : undefined
+            }
+            onSave={async (coords) => {
+              if (!d) return;
+              await update(d.id, { lat: coords.lat, lng: coords.lng });
+              toast.success("Pino ajustado", {
+                description: "Recalcule a rota para usar a nova posição.",
+              });
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
