@@ -194,6 +194,8 @@ function RotaPage() {
         id: d.id,
         lat: d.lat,
         lng: d.lng,
+        street: d.endereco,
+        number: d.numero,
         cep: d.cep,
         cidade: d.cidade,
         label: d.cliente,
