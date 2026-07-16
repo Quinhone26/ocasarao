@@ -165,7 +165,7 @@ export const optimizeRoute = createServerFn({ method: "POST" })
         const who = s.label || s.id;
         const attempts: Array<{
           strategy: string;
-          diag: GeocodeDiag | Record<string, unknown>;
+          diag: GeocodeDiag;
         }> = [];
         const log = (msg: string, extra?: unknown) =>
           console.log(`[optimizeRoute] ${who} | ${msg}`, extra ?? "");
