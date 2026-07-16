@@ -8,6 +8,7 @@ const stopSchema = z.object({
   address: z.string().min(1),
   cep: z.string().default(""),
   cidade: z.string().default(""),
+  label: z.string().default(""),
 });
 
 const inputSchema = z.object({
