@@ -200,10 +200,8 @@ function RotaPage() {
         address:
           [
             `${d.endereco}${d.numero ? ", " + d.numero : ""}`,
-            d.bairro,
-            d.cidade,
             d.cep,
-            "PR",
+            "Brasil",
           ]
             .filter(Boolean)
             .join(", ") || d.endereco,
