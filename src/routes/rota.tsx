@@ -1,13 +1,14 @@
 /// <reference types="google.maps" />
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Route as RouteIcon, Navigation, Loader2, MapPin, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Route as RouteIcon, Navigation, Loader2, MapPin, CheckCircle2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useDeliveries } from "@/lib/deliveries";
 import type { Delivery } from "@/lib/deliveries";
 import { optimizeRoute } from "@/lib/routes.functions";
 import { loadGoogleMaps, decodePolyline } from "@/lib/gmaps";
+import { PinAdjustDialog } from "@/components/PinAdjustDialog";
 
 function buildNavUrl(
   origin: { lat: number; lng: number },
