@@ -337,11 +337,17 @@ export const optimizeRoute = createServerFn({ method: "POST" })
       duration: route.duration ?? "0s",
       polyline: route.polyline?.encodedPolyline ?? "",
       // Coordenadas resolvidas por parada — o cliente pode persistir/exibir.
-      resolved: resolved.map((r) => ({
-        id: r.id,
-        lat: r.latLng!.lat,
-        lng: r.latLng!.lng,
-        source: r.source,
-      })),
+      resolved: resolved.map((r) => {
+        const stop = data.stops.find((s) => s.id === r.id);
+        return {
+          id: r.id,
+          lat: r.latLng!.lat,
+          lng: r.latLng!.lng,
+          source: r.source,
+          label: stop?.label ?? "",
+          queryAddress: stop?.address ?? "",
+          attempts: r.attempts,
+        };
+      }),
     };
   });
