@@ -514,3 +514,38 @@ export const optimizeRoute = createServerFn({ method: "POST" })
       }),
     };
   });
+
+// Geocodifica um endereço avulso (usado para localizar o endereço da empresa
+// nas configurações). Tenta pelo endereço completo e, se falhar, pelo CEP.
+export const geocodeAddress = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z
+      .object({
+        address: z.string().min(3),
+        cep: z.string().default(""),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
+    const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+    if (!LOVABLE_API_KEY || !GOOGLE_MAPS_API_KEY) {
+      throw new Error("Google Maps não configurado");
+    }
+    const attempts: string[] = [data.address];
+    const cep = normalizeCep(data.cep);
+    if (cep.length === 8) attempts.push(`${cep}, Brasil`);
+    for (const q of attempts) {
+      const r = await geocode(q, GOOGLE_MAPS_API_KEY, LOVABLE_API_KEY, {
+        allowPartial: true,
+      });
+      if (r.location) {
+        return {
+          lat: r.location.lat,
+          lng: r.location.lng,
+          formatted: r.diag.chosen?.formattedAddress ?? q,
+        };
+      }
+    }
+    throw new Error("Não foi possível localizar este endereço.");
+  });
