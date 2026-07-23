@@ -16,7 +16,8 @@ import { useClientes, clienteKey, upsertClienteFromDelivery, updateStoredCliente
 import { cn } from "@/lib/utils";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { printComanda } from "@/lib/print-comanda";
-import { useCompanySettings } from "@/lib/company-settings";
+import { useCompanySettings, DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/company-settings";
+import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const Route = createFileRoute("/")({
   component: Index,
