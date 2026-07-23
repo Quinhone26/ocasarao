@@ -122,6 +122,16 @@ export function DeliveryCard({
           <Navigation className="w-4 h-4" />
           <span className="text-[10px] font-semibold">Navegar</span>
         </Button>
+        {onWhatsapp && (
+          <Button
+            onClick={onWhatsapp}
+            className="h-12 flex-col gap-0.5 rounded-xl bg-[#25D366] text-white hover:bg-[#1ebe57]"
+            aria-label="Enviar WhatsApp"
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span className="text-[10px] font-semibold">WhatsApp</span>
+          </Button>
+        )}
         <Button
           onClick={onDeliver}
           disabled={d.status === "entregue"}
