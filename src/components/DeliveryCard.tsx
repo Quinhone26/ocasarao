@@ -12,6 +12,7 @@ export function DeliveryCard({
   onNavigate,
   onPrint,
   onTogglePago,
+  onWhatsapp,
 }: {
   d: Delivery;
   onEdit: () => void;
@@ -20,6 +21,7 @@ export function DeliveryCard({
   onNavigate: () => void;
   onPrint?: () => void;
   onTogglePago?: () => void;
+  onWhatsapp?: () => void;
 }) {
   const dt = new Date(d.dataHora);
   const fullAddr = [
