@@ -63,11 +63,7 @@ function Index() {
   const navigatedAtRef = useRef<number>(0);
 
   // Dia selecionado no relatório (ISO yyyy-mm-dd). Default: hoje.
-  const todayISO = useMemo(() => {
-    const d = new Date();
-    const pad = (n: number) => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  }, []);
+  const todayISO = useMemo(() => toDayKey(new Date()), []);
   const [reportDay, setReportDay] = useState<string>(todayISO);
   const [company, setCompany] = useCompanySettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
