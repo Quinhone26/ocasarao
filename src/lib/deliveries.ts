@@ -188,6 +188,31 @@ export function useDeliveries() {
     }
     const list = (data as DeliveryRow[]).map(fromRow);
     applyItems(() => list);
+
+    // Backfill de track_code em entregas antigas — permite gerar link de
+    // rastreio para pedidos criados antes da migração.
+    const missing = list.filter((d) => !d.trackCode);
+    if (missing.length > 0) {
+      await Promise.all(
+        missing.map(async (d) => {
+          const code = generateTrackCode();
+          const { error: uErr } = await supabase
+            .from("deliveries")
+            .update({ track_code: code })
+            .eq("id", d.id)
+            .is("track_code", null);
+          if (uErr) {
+            if (!/track_code/i.test(uErr.message)) {
+              console.warn("[deliveries] backfill track_code:", uErr.message);
+            }
+            return;
+          }
+          applyItems((prev) =>
+            prev.map((x) => (x.id === d.id ? { ...x, trackCode: code } : x)),
+          );
+        }),
+      );
+    }
   }, [applyItems]);
 
   useEffect(() => {
