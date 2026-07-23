@@ -327,7 +327,7 @@ function TrackPage() {
           <p className="text-sm font-medium">{enderecoTxt}</p>
         </div>
 
-        {track.status === "em_rota" && driver && (
+        {!isDone && track.status !== "cancelada" && driver && (
           <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-sm">
             <p className="font-medium text-primary">🛵 Entregador a caminho</p>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -336,15 +336,15 @@ function TrackPage() {
           </div>
         )}
 
-        {track.status === "em_rota" && !driver && companyOrigin && (
+        {!isDone && track.status !== "cancelada" && !driver && companyOrigin && (
           <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
             Rota traçada a partir de {track.empresa || "nossa loja"} até seu endereço.
           </div>
         )}
 
-        {track.status === "em_rota" && !driver && !companyOrigin && (
+        {!isDone && track.status !== "cancelada" && !driver && !companyOrigin && (
           <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-            Aguardando o entregador ligar o GPS…
+            Aguardando localização…
           </div>
         )}
 
