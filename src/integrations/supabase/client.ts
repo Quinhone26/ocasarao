@@ -33,4 +33,5 @@ export type DeliveryRow = {
   status: "pendente" | "em_rota" | "entregue" | "cancelada";
   pago: boolean | null;
   criado_em: string;
+  track_code: string | null;
 };
