@@ -17,7 +17,7 @@ export const DEFAULT_WHATSAPP_TEMPLATE =
   "Olá {cliente}! 🛵 Seu pedido de *{empresa}* saiu para entrega.\n\n📍 Endereço: {endereco}\n💰 Valor: {valor} ({pagamento})\n\nAcompanhe seu entregador ao vivo: {rastreio}\n\nQualquer coisa, é só chamar!";
 
 export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
-  nome: "RotaExpress",
+  nome: "O Casarão",
   saudacao: "Obrigado pela preferência!",
   whatsappTemplate: DEFAULT_WHATSAPP_TEMPLATE,
   enderecoOrigem: "",

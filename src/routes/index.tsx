@@ -484,11 +484,11 @@ function Index() {
         {/* Header */}
         <header className="sticky top-0 z-20 bg-primary text-primary-foreground px-4 pt-6 pb-4 shadow-elevated">
           <div className="flex items-center gap-3">
-            <div className="grid place-items-center w-11 h-11 rounded-xl bg-primary-foreground/10">
-              <Bike className="w-6 h-6" />
+            <div className="grid place-items-center w-11 h-11 rounded-xl bg-primary-foreground/10 overflow-hidden">
+              <img src="/icon-192.png" alt="O Casarão" className="w-11 h-11 object-cover" />
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className="text-lg font-bold leading-tight truncate">{company.nome || "RotaExpress"}</h1>
+              <h1 className="text-lg font-bold leading-tight truncate">{company.nome || "O Casarão"}</h1>
               <p className="text-xs text-primary-foreground/70">Gestão de entregas</p>
             </div>
             <button
@@ -911,7 +911,7 @@ function Index() {
               onClick={async () => {
                 try {
                   await setCompany({
-                    nome: companyDraft.nome.trim() || "RotaExpress",
+                    nome: companyDraft.nome.trim() || "O Casarão",
                     saudacao: companyDraft.saudacao.trim(),
                     whatsappTemplate: companyDraft.whatsappTemplate.trim() || DEFAULT_WHATSAPP_TEMPLATE,
                     enderecoOrigem: companyDraft.enderecoOrigem.trim(),

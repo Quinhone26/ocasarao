@@ -1,13 +1,13 @@
 {
-  "name": "RotaExpress · Gestão de entregas",
-  "short_name": "RotaExpress",
-  "description": "App para motoboys cadastrarem entregas, navegar pelo Google Maps e controlar status.",
+  "name": "O Casarão · Gestão de entregas",
+  "short_name": "O Casarão",
+  "description": "App do O Casarão para cadastro de entregas, roteirização e rastreio.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#1e3a8a",
-  "theme_color": "#1e3a8a",
+  "background_color": "#3b2416",
+  "theme_color": "#3b2416",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },

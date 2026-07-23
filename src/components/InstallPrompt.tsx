@@ -105,7 +105,7 @@ export function InstallPrompt() {
               <Download className="h-5 w-5" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-foreground">Instalar RotaExpress</p>
+              <p className="text-sm font-medium text-foreground">Instalar O Casarão</p>
               <p className="text-xs text-muted-foreground">Adicione à tela inicial para acesso rápido.</p>
             </div>
             <button
