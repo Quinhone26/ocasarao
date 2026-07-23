@@ -354,15 +354,6 @@ function TrackPage() {
           </div>
         )}
 
-        <Button
-          onClick={openInMaps}
-          disabled={!destination}
-          variant="outline"
-          className="w-full h-11 rounded-xl"
-        >
-          <Navigation className="w-4 h-4" />
-          Abrir no Google Maps
-        </Button>
       </main>
     </div>
   );
