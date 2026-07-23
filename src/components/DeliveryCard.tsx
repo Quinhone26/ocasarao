@@ -110,7 +110,10 @@ export function DeliveryCard({
       )}
 
 
-      <div className={`grid ${onPrint ? "grid-cols-5" : "grid-cols-4"} gap-1 p-2 border-t border-border bg-muted/30`}>
+      <div
+        className="grid gap-1 p-2 border-t border-border bg-muted/30"
+        style={{ gridTemplateColumns: `repeat(${4 + (onPrint ? 1 : 0) + (onWhatsapp ? 1 : 0)}, minmax(0, 1fr))` }}
+      >
         <Button
           onClick={onNavigate}
           className="h-12 flex-col gap-0.5 bg-accent text-accent-foreground hover:bg-accent/90 rounded-xl"
