@@ -843,6 +843,60 @@ function Index() {
                 Enviada ao tocar em WhatsApp no card da entrega. Variáveis:{" "}
                 <code className="text-[11px]">{"{cliente} {empresa} {endereco} {valor} {pagamento} {maps} {saudacao} {observacoes}"}</code>
               </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="company-endereco">Endereço da empresa (origem das entregas)</Label>
+              <Input
+                id="company-endereco"
+                value={companyDraft.enderecoOrigem}
+                onChange={(e) => setCompanyDraft({ ...companyDraft, enderecoOrigem: e.target.value })}
+                placeholder="Rua, número, bairro, cidade"
+              />
+              <div className="flex gap-2 items-center">
+                <Input
+                  aria-label="Latitude"
+                  value={companyDraft.latOrigem ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value.trim();
+                    setCompanyDraft({ ...companyDraft, latOrigem: v === "" ? null : Number(v) });
+                  }}
+                  placeholder="Latitude"
+                />
+                <Input
+                  aria-label="Longitude"
+                  value={companyDraft.lngOrigem ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value.trim();
+                    setCompanyDraft({ ...companyDraft, lngOrigem: v === "" ? null : Number(v) });
+                  }}
+                  placeholder="Longitude"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={!companyDraft.enderecoOrigem.trim() || geocodingOrigem}
+                  onClick={async () => {
+                    try {
+                      setGeocodingOrigem(true);
+                      const r = await geocodeAddressFn({
+                        data: { address: companyDraft.enderecoOrigem.trim(), cep: "" },
+                      });
+                      setCompanyDraft((d) => ({ ...d, latOrigem: r.lat, lngOrigem: r.lng }));
+                      toast.success("Endereço localizado", { description: r.formatted });
+                    } catch (e) {
+                      toast.error("Não foi possível localizar", {
+                        description: e instanceof Error ? e.message : "Tente novamente",
+                      });
+                    } finally {
+                      setGeocodingOrigem(false);
+                    }
+                  }}
+                >
+                  {geocodingOrigem ? "Buscando…" : "Buscar"}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Usado para traçar a rota do estabelecimento até o cliente quando o GPS do entregador não estiver disponível.
+              </p>
             </div>
           </div>
           <DialogFooter className="gap-2 pt-2">
@@ -854,6 +908,15 @@ function Index() {
                     nome: companyDraft.nome.trim() || "RotaExpress",
                     saudacao: companyDraft.saudacao.trim(),
                     whatsappTemplate: companyDraft.whatsappTemplate.trim() || DEFAULT_WHATSAPP_TEMPLATE,
+                    enderecoOrigem: companyDraft.enderecoOrigem.trim(),
+                    latOrigem:
+                      typeof companyDraft.latOrigem === "number" && isFinite(companyDraft.latOrigem)
+                        ? companyDraft.latOrigem
+                        : null,
+                    lngOrigem:
+                      typeof companyDraft.lngOrigem === "number" && isFinite(companyDraft.lngOrigem)
+                        ? companyDraft.lngOrigem
+                        : null,
                   });
                   setSettingsOpen(false);
                   toast.success("Configurações salvas");
