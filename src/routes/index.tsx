@@ -566,9 +566,13 @@ function Index() {
                       onDeliver={() => handleDeliver(d)}
                       onPrint={() => printComanda(d)}
                       onWhatsapp={
-                        d.telefone
+                        isValidBrPhone(d.telefone)
                           ? () => {
                               const url = buildWhatsappUrl(d, company);
+                              if (!url) {
+                                toast.error("Telefone do cliente inválido");
+                                return;
+                              }
                               window.open(url, "_blank", "noopener,noreferrer");
                             }
                           : undefined
