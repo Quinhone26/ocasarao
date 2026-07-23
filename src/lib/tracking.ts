@@ -95,6 +95,9 @@ export type PublicTrack = {
   lng: number | null;
   status: "pendente" | "em_rota" | "entregue" | "cancelada";
   empresa: string | null;
+  origem_lat: number | null;
+  origem_lng: number | null;
+  origem_endereco: string | null;
 };
 
 export async function fetchPublicTrack(code: string): Promise<PublicTrack | null> {
