@@ -33,8 +33,8 @@ export const Route = createFileRoute("/r/$code")({
 
 function statusLabel(s: PublicTrack["status"]): string {
   return {
-    pendente: "Aguardando saída",
-    em_rota: "A caminho 🛵",
+    pendente: "Seu pedido está a caminho 🛵",
+    em_rota: "Seu pedido está a caminho 🛵",
     entregue: "Entregue",
     cancelada: "Cancelada",
   }[s];
