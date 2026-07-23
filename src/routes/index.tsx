@@ -18,6 +18,7 @@ import { InstallPrompt } from "@/components/InstallPrompt";
 import { printComanda } from "@/lib/print-comanda";
 import { useCompanySettings, DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/company-settings";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
+import { isValidBrPhone } from "@/lib/masks";
 
 export const Route = createFileRoute("/")({
   component: Index,
