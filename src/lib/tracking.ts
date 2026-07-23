@@ -95,6 +95,9 @@ export type PublicTrack = {
   lng: number | null;
   status: "pendente" | "em_rota" | "entregue" | "cancelada";
   empresa: string | null;
+  origem_lat: number | null;
+  origem_lng: number | null;
+  origem_endereco: string | null;
 };
 
 export async function fetchPublicTrack(code: string): Promise<PublicTrack | null> {
@@ -103,7 +106,21 @@ export async function fetchPublicTrack(code: string): Promise<PublicTrack | null
     console.warn("[tracking] get_track:", error.message);
     return null;
   }
-  const row = Array.isArray(data) ? data[0] : data;
-  if (!row) return null;
-  return row as PublicTrack;
+  const raw = Array.isArray(data) ? data[0] : data;
+  if (!raw) return null;
+  const row = raw as Partial<PublicTrack>;
+  return {
+    cliente: row.cliente ?? "",
+    endereco: row.endereco ?? "",
+    numero: row.numero ?? "",
+    bairro: row.bairro ?? "",
+    cidade: row.cidade ?? "",
+    lat: row.lat ?? null,
+    lng: row.lng ?? null,
+    status: (row.status as PublicTrack["status"]) ?? "pendente",
+    empresa: row.empresa ?? null,
+    origem_lat: row.origem_lat ?? null,
+    origem_lng: row.origem_lng ?? null,
+    origem_endereco: row.origem_endereco ?? null,
+  };
 }
