@@ -260,7 +260,7 @@ export function useDeliveries() {
       const parsed = deliverySchema.parse(input);
       const d: Delivery = {
         ...parsed,
-        id: crypto.randomUUID(),
+        id: newId(),
         criadoEm: new Date().toISOString(),
         trackCode: generateTrackCode(),
       };
@@ -286,11 +286,16 @@ export function useDeliveries() {
     [applyItems],
   );
 
+  // Schema parcial para validar patches em `update` (evita valores absurdos
+  // vindos de callers como o servidor MCP).
+  const patchSchema = deliverySchema.partial();
+
   const update = useCallback(
     async (id: string, patch: Partial<Delivery>) => {
-      const before = items.find((x) => x.id === id);
-      // Normaliza/valida o CEP também em updates parciais.
-      const normalized: Partial<Delivery> = { ...patch };
+      // Valida somente os campos presentes no patch. Rejeita cedo se algo
+      // como `valor: -1` chegar aqui.
+      const validated = patchSchema.parse(patch) as Partial<Delivery>;
+      const normalized: Partial<Delivery> = { ...validated };
       if (patch.cep !== undefined) {
         const digits = normalizeCep(patch.cep);
         if (digits.length > 0 && !isValidCep(digits)) {
@@ -299,40 +304,48 @@ export function useDeliveries() {
         normalized.cep = digits.length === 0 ? "" : formatCep(digits);
       }
       localOpsRef.current.add(id);
-      applyItems((prev) =>
-        prev.map((d) => (d.id === id ? { ...d, ...normalized } : d)),
-      );
+      let before: Delivery | undefined;
+      applyItems((prev) => {
+        before = prev.find((x) => x.id === id);
+        return prev.map((d) => (d.id === id ? { ...d, ...normalized } : d));
+      });
       const { error } = await supabase
         .from("deliveries")
         .update(toRow(normalized))
         .eq("id", id);
       if (error) {
         localOpsRef.current.delete(id);
-        // rollback
         if (before) {
-          applyItems((prev) => prev.map((d) => (d.id === id ? before : d)));
+          const rollback = before;
+          applyItems((prev) => prev.map((d) => (d.id === id ? rollback : d)));
         }
         console.error("[deliveries] update error", error);
         throw error;
       }
     },
-    [applyItems, items],
+    [applyItems],
   );
 
   const remove = useCallback(
     async (id: string) => {
-      const before = items.find((x) => x.id === id);
       localOpsRef.current.add(id);
-      applyItems((prev) => prev.filter((d) => d.id !== id));
+      let before: Delivery | undefined;
+      applyItems((prev) => {
+        before = prev.find((x) => x.id === id);
+        return prev.filter((d) => d.id !== id);
+      });
       const { error } = await supabase.from("deliveries").delete().eq("id", id);
       if (error) {
         localOpsRef.current.delete(id);
-        if (before) applyItems((prev) => [before, ...prev]);
+        if (before) {
+          const rollback = before;
+          applyItems((prev) => [rollback, ...prev]);
+        }
         console.error("[deliveries] delete error", error);
         throw error;
       }
     },
-    [applyItems, items],
+    [applyItems],
   );
 
   return { items, create, update, remove };
