@@ -5,6 +5,9 @@ export type CompanySettings = {
   nome: string;
   saudacao: string;
   whatsappTemplate: string;
+  enderecoOrigem: string;
+  latOrigem: number | null;
+  lngOrigem: number | null;
 };
 
 const KEY = "rotaexpress:company-settings:v1";
@@ -17,6 +20,9 @@ export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
   nome: "RotaExpress",
   saudacao: "Obrigado pela preferência!",
   whatsappTemplate: DEFAULT_WHATSAPP_TEMPLATE,
+  enderecoOrigem: "",
+  latOrigem: null,
+  lngOrigem: null,
 };
 
 export function getCompanySettings(): CompanySettings {
@@ -29,6 +35,15 @@ export function getCompanySettings(): CompanySettings {
       nome: (parsed.nome ?? DEFAULT_COMPANY_SETTINGS.nome).toString(),
       saudacao: (parsed.saudacao ?? DEFAULT_COMPANY_SETTINGS.saudacao).toString(),
       whatsappTemplate: (parsed.whatsappTemplate ?? DEFAULT_WHATSAPP_TEMPLATE).toString(),
+      enderecoOrigem: (parsed.enderecoOrigem ?? "").toString(),
+      latOrigem:
+        typeof parsed.latOrigem === "number" && isFinite(parsed.latOrigem)
+          ? parsed.latOrigem
+          : null,
+      lngOrigem:
+        typeof parsed.lngOrigem === "number" && isFinite(parsed.lngOrigem)
+          ? parsed.lngOrigem
+          : null,
     };
   } catch {
     return DEFAULT_COMPANY_SETTINGS;
@@ -53,11 +68,20 @@ async function fetchFromDb(): Promise<CompanySettings | null> {
   }
   if (!data) return null;
   const row = data as Record<string, unknown>;
+  const toNum = (v: unknown): number | null =>
+    typeof v === "number" && isFinite(v)
+      ? v
+      : typeof v === "string" && v.trim() && isFinite(Number(v))
+        ? Number(v)
+        : null;
   return {
     nome: (row.nome as string | undefined) ?? DEFAULT_COMPANY_SETTINGS.nome,
     saudacao: (row.saudacao as string | undefined) ?? DEFAULT_COMPANY_SETTINGS.saudacao,
     whatsappTemplate:
       (row.whatsapp_template as string | undefined) ?? DEFAULT_WHATSAPP_TEMPLATE,
+    enderecoOrigem: (row.endereco_origem as string | undefined) ?? "",
+    latOrigem: toNum(row.lat_origem),
+    lngOrigem: toNum(row.lng_origem),
   };
 }
 
@@ -68,14 +92,21 @@ async function saveToDb(s: CompanySettings): Promise<void> {
     nome: s.nome,
     saudacao: s.saudacao,
     whatsapp_template: s.whatsappTemplate,
+    endereco_origem: s.enderecoOrigem || null,
+    lat_origem: s.latOrigem,
+    lng_origem: s.lngOrigem,
     atualizado_em: now,
   };
   const { error } = await supabase
     .from("company_settings")
     .upsert(full, { onConflict: "id" });
   if (!error) return;
-  // Coluna whatsapp_template ainda não migrada — cai para o formato antigo.
-  if (/whatsapp_template/i.test(error.message) || error.code === "PGRST204") {
+  // Colunas novas ainda não migradas — cai para o formato antigo, mantém local.
+  const msg = error.message || "";
+  const isMissingCol =
+    /whatsapp_template|endereco_origem|lat_origem|lng_origem/i.test(msg) ||
+    error.code === "PGRST204";
+  if (isMissingCol) {
     const { error: e2 } = await supabase
       .from("company_settings")
       .upsert(
@@ -84,11 +115,11 @@ async function saveToDb(s: CompanySettings): Promise<void> {
       );
     if (e2) throw new Error(e2.message);
     console.warn(
-      "[company-settings] coluna whatsapp_template ausente no banco — mensagem do WhatsApp salva apenas localmente.",
+      "[company-settings] colunas novas ausentes no banco — endereço da empresa salvo apenas localmente. Rode a migração pendente.",
     );
     return;
   }
-  throw new Error(error.message);
+  throw new Error(msg);
 }
 
 export function useCompanySettings(): [CompanySettings, (s: CompanySettings) => Promise<void>] {
@@ -99,10 +130,14 @@ export function useCompanySettings(): [CompanySettings, (s: CompanySettings) => 
     (async () => {
       const remote = await fetchFromDb();
       if (cancelled || !remote) return;
-      // Preserva o template local se o banco ainda não tiver a coluna.
+      const local = getCompanySettings();
+      // Preserva valores locais quando o banco ainda não persistiu a coluna.
       const merged: CompanySettings = {
         ...remote,
-        whatsappTemplate: remote.whatsappTemplate || getCompanySettings().whatsappTemplate,
+        whatsappTemplate: remote.whatsappTemplate || local.whatsappTemplate,
+        enderecoOrigem: remote.enderecoOrigem || local.enderecoOrigem,
+        latOrigem: remote.latOrigem ?? local.latOrigem,
+        lngOrigem: remote.lngOrigem ?? local.lngOrigem,
       };
       writeCache(merged);
       setS(merged);
