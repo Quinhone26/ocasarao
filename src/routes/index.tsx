@@ -45,6 +45,7 @@ type Filter = "todas" | DeliveryStatus;
 
 function Index() {
   const { items, create, update, remove } = useDeliveries();
+  useDriverBroadcast(items);
   const clientes = useClientes(items);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("todas");
