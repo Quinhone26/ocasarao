@@ -3,6 +3,7 @@ import { z } from "zod";
 import { supabase, type DeliveryRow } from "@/integrations/supabase/client";
 import { formatCep, isValidCep, normalizeCep } from "@/lib/cep";
 import { generateTrackCode } from "@/lib/tracking";
+import { newId } from "@/lib/utils";
 
 export type DeliveryStatus = "pendente" | "em_rota" | "entregue" | "cancelada";
 
