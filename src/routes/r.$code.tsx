@@ -60,6 +60,9 @@ function TrackPage() {
   const mapInstance = useRef<google.maps.Map | null>(null);
   const driverMarker = useRef<google.maps.Marker | null>(null);
   const destMarker = useRef<google.maps.Marker | null>(null);
+  const originMarker = useRef<google.maps.Marker | null>(null);
+  const directionsRenderer = useRef<google.maps.DirectionsRenderer | null>(null);
+  const directionsService = useRef<google.maps.DirectionsService | null>(null);
 
   useEffect(() => {
     const w = window as unknown as { gm_authFailure?: () => void };
