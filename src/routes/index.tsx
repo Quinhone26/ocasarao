@@ -16,7 +16,8 @@ import { useClientes, clienteKey, upsertClienteFromDelivery, updateStoredCliente
 import { cn } from "@/lib/utils";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { printComanda } from "@/lib/print-comanda";
-import { useCompanySettings } from "@/lib/company-settings";
+import { useCompanySettings, DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/company-settings";
+import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -564,6 +565,14 @@ function Index() {
                       onDelete={() => setDeleting(d)}
                       onDeliver={() => handleDeliver(d)}
                       onPrint={() => printComanda(d)}
+                      onWhatsapp={
+                        d.telefone
+                          ? () => {
+                              const url = buildWhatsappUrl(d, company);
+                              window.open(url, "_blank", "noopener,noreferrer");
+                            }
+                          : undefined
+                      }
                       onTogglePago={async () => {
                         try {
                           await update(d.id, { pago: !d.pago });
@@ -803,6 +812,30 @@ function Index() {
               />
               <p className="text-xs text-muted-foreground">Impressa no rodapé da comanda de entrega.</p>
             </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="company-whatsapp">Mensagem do WhatsApp</Label>
+                <button
+                  type="button"
+                  onClick={() => setCompanyDraft({ ...companyDraft, whatsappTemplate: DEFAULT_WHATSAPP_TEMPLATE })}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Restaurar padrão
+                </button>
+              </div>
+              <textarea
+                id="company-whatsapp"
+                value={companyDraft.whatsappTemplate}
+                onChange={(e) => setCompanyDraft({ ...companyDraft, whatsappTemplate: e.target.value })}
+                placeholder="Olá {cliente}! Seu pedido saiu para entrega..."
+                rows={6}
+                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 font-mono"
+              />
+              <p className="text-xs text-muted-foreground">
+                Enviada ao tocar em WhatsApp no card da entrega. Variáveis:{" "}
+                <code className="text-[11px]">{"{cliente} {empresa} {endereco} {valor} {pagamento} {maps} {saudacao} {observacoes}"}</code>
+              </p>
+            </div>
           </div>
           <DialogFooter className="gap-2 pt-2">
             <Button variant="secondary" onClick={() => setSettingsOpen(false)}>Cancelar</Button>
@@ -812,6 +845,7 @@ function Index() {
                   await setCompany({
                     nome: companyDraft.nome.trim() || "RotaExpress",
                     saudacao: companyDraft.saudacao.trim(),
+                    whatsappTemplate: companyDraft.whatsappTemplate.trim() || DEFAULT_WHATSAPP_TEMPLATE,
                   });
                   setSettingsOpen(false);
                   toast.success("Configurações salvas");

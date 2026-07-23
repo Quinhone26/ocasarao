@@ -4,21 +4,21 @@ import { supabase } from "@/integrations/supabase/client";
 export type CompanySettings = {
   nome: string;
   saudacao: string;
+  whatsappTemplate: string;
 };
 
 const KEY = "rotaexpress:company-settings:v1";
 const ROW_ID = "default";
 
+export const DEFAULT_WHATSAPP_TEMPLATE =
+  "Olá {cliente}! 🛵 Seu pedido de *{empresa}* saiu para entrega.\n\n📍 Endereço: {endereco}\n💰 Valor: {valor} ({pagamento})\n\nAcompanhe no mapa: {maps}\n\nQualquer coisa, é só chamar!";
+
 export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
   nome: "RotaExpress",
   saudacao: "Obrigado pela preferência!",
+  whatsappTemplate: DEFAULT_WHATSAPP_TEMPLATE,
 };
 
-/**
- * Leitura síncrona (usada por `printComanda`) — retorna o cache local mais recente.
- * A fonte da verdade é o banco (tabela public.company_settings); o cache é
- * atualizado sempre que o hook `useCompanySettings` busca ou grava.
- */
 export function getCompanySettings(): CompanySettings {
   if (typeof window === "undefined") return DEFAULT_COMPANY_SETTINGS;
   try {
@@ -28,6 +28,7 @@ export function getCompanySettings(): CompanySettings {
     return {
       nome: (parsed.nome ?? DEFAULT_COMPANY_SETTINGS.nome).toString(),
       saudacao: (parsed.saudacao ?? DEFAULT_COMPANY_SETTINGS.saudacao).toString(),
+      whatsappTemplate: (parsed.whatsappTemplate ?? DEFAULT_WHATSAPP_TEMPLATE).toString(),
     };
   } catch {
     return DEFAULT_COMPANY_SETTINGS;
@@ -43,7 +44,7 @@ function writeCache(s: CompanySettings): void {
 async function fetchFromDb(): Promise<CompanySettings | null> {
   const { data, error } = await supabase
     .from("company_settings")
-    .select("nome, saudacao")
+    .select("*")
     .eq("id", ROW_ID)
     .maybeSingle();
   if (error) {
@@ -51,33 +52,60 @@ async function fetchFromDb(): Promise<CompanySettings | null> {
     return null;
   }
   if (!data) return null;
+  const row = data as Record<string, unknown>;
   return {
-    nome: (data.nome ?? DEFAULT_COMPANY_SETTINGS.nome).toString(),
-    saudacao: (data.saudacao ?? DEFAULT_COMPANY_SETTINGS.saudacao).toString(),
+    nome: (row.nome as string | undefined) ?? DEFAULT_COMPANY_SETTINGS.nome,
+    saudacao: (row.saudacao as string | undefined) ?? DEFAULT_COMPANY_SETTINGS.saudacao,
+    whatsappTemplate:
+      (row.whatsapp_template as string | undefined) ?? DEFAULT_WHATSAPP_TEMPLATE,
   };
 }
 
 async function saveToDb(s: CompanySettings): Promise<void> {
+  const now = new Date().toISOString();
+  const full = {
+    id: ROW_ID,
+    nome: s.nome,
+    saudacao: s.saudacao,
+    whatsapp_template: s.whatsappTemplate,
+    atualizado_em: now,
+  };
   const { error } = await supabase
     .from("company_settings")
-    .upsert(
-      { id: ROW_ID, nome: s.nome, saudacao: s.saudacao, atualizado_em: new Date().toISOString() },
-      { onConflict: "id" },
+    .upsert(full, { onConflict: "id" });
+  if (!error) return;
+  // Coluna whatsapp_template ainda não migrada — cai para o formato antigo.
+  if (/whatsapp_template/i.test(error.message) || error.code === "PGRST204") {
+    const { error: e2 } = await supabase
+      .from("company_settings")
+      .upsert(
+        { id: ROW_ID, nome: s.nome, saudacao: s.saudacao, atualizado_em: now },
+        { onConflict: "id" },
+      );
+    if (e2) throw new Error(e2.message);
+    console.warn(
+      "[company-settings] coluna whatsapp_template ausente no banco — mensagem do WhatsApp salva apenas localmente.",
     );
-  if (error) throw new Error(error.message);
+    return;
+  }
+  throw new Error(error.message);
 }
 
 export function useCompanySettings(): [CompanySettings, (s: CompanySettings) => Promise<void>] {
   const [s, setS] = useState<CompanySettings>(() => getCompanySettings());
 
-  // Sincroniza a partir do banco ao montar e escuta mudanças locais/entre abas.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const remote = await fetchFromDb();
       if (cancelled || !remote) return;
-      writeCache(remote);
-      setS(remote);
+      // Preserva o template local se o banco ainda não tiver a coluna.
+      const merged: CompanySettings = {
+        ...remote,
+        whatsappTemplate: remote.whatsappTemplate || getCompanySettings().whatsappTemplate,
+      };
+      writeCache(merged);
+      setS(merged);
     })();
     const handler = () => setS(getCompanySettings());
     window.addEventListener("company-settings-changed", handler);
@@ -90,7 +118,6 @@ export function useCompanySettings(): [CompanySettings, (s: CompanySettings) => 
   }, []);
 
   const update = async (next: CompanySettings) => {
-    // Otimista: aplica local, depois persiste. Se falhar, o erro sobe para o caller.
     writeCache(next);
     setS(next);
     await saveToDb(next);

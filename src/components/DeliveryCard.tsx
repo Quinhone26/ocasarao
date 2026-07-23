@@ -1,4 +1,4 @@
-import { Navigation, Pencil, Trash2, CheckCircle2, Phone, MapPin, Clock, CalendarClock, Printer } from "lucide-react";
+import { Navigation, Pencil, Trash2, CheckCircle2, Phone, MapPin, Clock, CalendarClock, Printer, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "./StatusBadge";
 import type { Delivery } from "@/lib/deliveries";
@@ -12,6 +12,7 @@ export function DeliveryCard({
   onNavigate,
   onPrint,
   onTogglePago,
+  onWhatsapp,
 }: {
   d: Delivery;
   onEdit: () => void;
@@ -20,6 +21,7 @@ export function DeliveryCard({
   onNavigate: () => void;
   onPrint?: () => void;
   onTogglePago?: () => void;
+  onWhatsapp?: () => void;
 }) {
   const dt = new Date(d.dataHora);
   const fullAddr = [
@@ -108,7 +110,10 @@ export function DeliveryCard({
       )}
 
 
-      <div className={`grid ${onPrint ? "grid-cols-5" : "grid-cols-4"} gap-1 p-2 border-t border-border bg-muted/30`}>
+      <div
+        className="grid gap-1 p-2 border-t border-border bg-muted/30"
+        style={{ gridTemplateColumns: `repeat(${4 + (onPrint ? 1 : 0) + (onWhatsapp ? 1 : 0)}, minmax(0, 1fr))` }}
+      >
         <Button
           onClick={onNavigate}
           className="h-12 flex-col gap-0.5 bg-accent text-accent-foreground hover:bg-accent/90 rounded-xl"
@@ -117,6 +122,16 @@ export function DeliveryCard({
           <Navigation className="w-4 h-4" />
           <span className="text-[10px] font-semibold">Navegar</span>
         </Button>
+        {onWhatsapp && (
+          <Button
+            onClick={onWhatsapp}
+            className="h-12 flex-col gap-0.5 rounded-xl bg-[#25D366] text-white hover:bg-[#1ebe57]"
+            aria-label="Enviar WhatsApp"
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span className="text-[10px] font-semibold">WhatsApp</span>
+          </Button>
+        )}
         <Button
           onClick={onDeliver}
           disabled={d.status === "entregue"}
