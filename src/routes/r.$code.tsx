@@ -1,8 +1,7 @@
 /// <reference types="google.maps" />
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MapPin, Loader2, Navigation, CheckCircle2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { MapPin, Loader2, CheckCircle2 } from "lucide-react";
 import {
   fetchPublicTrack,
   fetchDriverLocation,
