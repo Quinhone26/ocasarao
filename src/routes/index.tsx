@@ -564,7 +564,7 @@ function Index() {
                       onDeliver={() => handleDeliver(d)}
                       onPrint={() => printComanda(d)}
                       onWhatsapp={
-                        isValidBrPhone(d.telefone)
+                        d.telefone
                           ? () => {
                               const url = buildWhatsappUrl(d, company);
                               if (!url) {
