@@ -9,6 +9,7 @@ import type { Delivery } from "@/lib/deliveries";
 import { optimizeRoute } from "@/lib/routes.functions";
 import { loadGoogleMaps, decodePolyline } from "@/lib/gmaps";
 import { PinAdjustDialog } from "@/components/PinAdjustDialog";
+import { publishDriverLocation } from "@/lib/tracking";
 
 function buildNavUrl(
   origin: { lat: number; lng: number },
@@ -174,6 +175,30 @@ function RotaPage() {
     getLocation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Enquanto houver entregas em andamento (pendentes/em rota), transmite
+  // a posição do entregador em tempo real. O cliente vê no /r/<code>.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) return;
+    if (candidates.length === 0) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        void publishDriverLocation({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          heading: pos.coords.heading,
+          speed: pos.coords.speed,
+        });
+      },
+      (err) => {
+        console.warn("[rota] watchPosition:", err.message);
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 },
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [candidates.length]);
+
 
   const buildAndOptimize = async () => {
     if (!origin) {

@@ -2,12 +2,17 @@ import type { Delivery } from "@/lib/deliveries";
 import { formatBRL, buildMapsUrl } from "@/lib/deliveries";
 import type { CompanySettings } from "@/lib/company-settings";
 import { normalizeBrPhone } from "@/lib/masks";
+import { buildTrackUrl } from "@/lib/tracking";
 
 /**
  * Substitui placeholders no template do WhatsApp.
  * Placeholders suportados: {cliente} {telefone} {empresa} {saudacao}
  * {endereco} {numero} {bairro} {cidade} {cep} {complemento}
- * {valor} {pagamento} {observacoes} {maps}
+ * {valor} {pagamento} {observacoes} {maps} {rastreio}
+ *
+ * {rastreio} — link curto para a página de rastreio ao vivo do entregador.
+ * {maps}     — mesmo link curto quando a entrega tem track_code; caso
+ *              contrário, cai no link do Google Maps para o endereço.
  */
 export function renderWhatsappMessage(d: Delivery, company: CompanySettings): string {
   const enderecoCompleto = [
@@ -18,6 +23,8 @@ export function renderWhatsappMessage(d: Delivery, company: CompanySettings): st
   ]
     .filter(Boolean)
     .join(" · ");
+
+  const rastreio = buildTrackUrl(d.trackCode);
 
   const vars: Record<string, string> = {
     cliente: d.cliente || "",
@@ -33,7 +40,10 @@ export function renderWhatsappMessage(d: Delivery, company: CompanySettings): st
     valor: formatBRL(d.valor || 0),
     pagamento: d.pago ? "PAGO" : "a receber",
     observacoes: d.observacoes || "",
-    maps: buildMapsUrl(d),
+    rastreio: rastreio ?? buildMapsUrl(d),
+    // {maps} agora prioriza o link curto de rastreio (mais curto e com GPS
+    // ao vivo do entregador). Fallback: link do Google Maps do endereço.
+    maps: rastreio ?? buildMapsUrl(d),
   };
 
   return (company.whatsappTemplate || "").replace(

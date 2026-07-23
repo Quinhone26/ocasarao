@@ -11,7 +11,7 @@ const KEY = "rotaexpress:company-settings:v1";
 const ROW_ID = "default";
 
 export const DEFAULT_WHATSAPP_TEMPLATE =
-  "Olá {cliente}! 🛵 Seu pedido de *{empresa}* saiu para entrega.\n\n📍 Endereço: {endereco}\n💰 Valor: {valor} ({pagamento})\n\nAcompanhe no mapa: {maps}\n\nQualquer coisa, é só chamar!";
+  "Olá {cliente}! 🛵 Seu pedido de *{empresa}* saiu para entrega.\n\n📍 Endereço: {endereco}\n💰 Valor: {valor} ({pagamento})\n\nAcompanhe seu entregador ao vivo: {rastreio}\n\nQualquer coisa, é só chamar!";
 
 export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
   nome: "RotaExpress",

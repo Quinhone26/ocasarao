@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { z } from "zod";
 import { supabase, type DeliveryRow } from "@/integrations/supabase/client";
 import { formatCep, isValidCep, normalizeCep } from "@/lib/cep";
+import { generateTrackCode } from "@/lib/tracking";
 
 export type DeliveryStatus = "pendente" | "em_rota" | "entregue" | "cancelada";
 
@@ -24,6 +25,7 @@ export interface Delivery {
   status: DeliveryStatus;
   pago: boolean;
   criadoEm: string;
+  trackCode: string | null;
 }
 
 // ---------- Validação (Zod) ----------
@@ -130,6 +132,7 @@ function fromRow(r: DeliveryRow): Delivery {
     status: r.status,
     pago: r.pago ?? false,
     criadoEm: r.criado_em,
+    trackCode: r.track_code ?? null,
   };
 }
 
@@ -153,6 +156,7 @@ function toRow(d: Partial<Delivery>): Partial<DeliveryRow> {
   if (d.status !== undefined) r.status = d.status;
   if (d.pago !== undefined) r.pago = d.pago;
   if (d.criadoEm !== undefined) r.criado_em = d.criadoEm;
+  if (d.trackCode !== undefined) r.track_code = d.trackCode;
   return r;
 }
 
@@ -232,11 +236,20 @@ export function useDeliveries() {
         ...parsed,
         id: crypto.randomUUID(),
         criadoEm: new Date().toISOString(),
+        trackCode: generateTrackCode(),
       };
       localOpsRef.current.add(d.id);
       applyItems((prev) => [d, ...prev]);
       const { error } = await supabase.from("deliveries").insert(toRow(d));
       if (error) {
+        // Fallback: coluna track_code ainda não migrada — salva sem ela.
+        if (/track_code/i.test(error.message) || error.code === "PGRST204") {
+          const { trackCode: _tc, ...rest } = d;
+          void _tc;
+          const { error: e2 } = await supabase.from("deliveries").insert(toRow(rest));
+          if (!e2) return { ...d, trackCode: null };
+          console.error("[deliveries] create fallback error", e2);
+        }
         localOpsRef.current.delete(d.id);
         applyItems((prev) => prev.filter((x) => x.id !== d.id));
         console.error("[deliveries] create error", error);

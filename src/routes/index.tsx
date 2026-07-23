@@ -194,6 +194,7 @@ function Index() {
       status: "pendente",
       pago: false,
       criadoEm: new Date().toISOString(),
+      trackCode: null,
     };
   }, [prefill]);
 
