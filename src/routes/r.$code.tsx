@@ -117,27 +117,37 @@ function TrackPage() {
 
   // Renderiza / atualiza o mapa com pino do destino, do entregador e da rota.
   useEffect(() => {
-    if (mapUnavailable || !mapRef.current || !destination) return;
+    if (mapUnavailable || !mapRef.current) return;
+    // Precisa de ao menos um ponto para inicializar o mapa.
+    const center = destination ?? routeOrigin ?? companyOrigin;
+    if (!center) return;
     let cancelled = false;
     loadGoogleMaps()
       .then((g) => {
         if (cancelled || !mapRef.current) return;
         if (!mapInstance.current) {
           mapInstance.current = new g.maps.Map(mapRef.current, {
-            center: destination,
+            center,
             zoom: 15,
             disableDefaultUI: true,
             zoomControl: true,
             gestureHandling: "greedy",
           });
         }
-        if (!destMarker.current) {
-          destMarker.current = new g.maps.Marker({
-            position: destination,
-            map: mapInstance.current,
-            label: { text: "📍", color: "#fff" },
-            title: "Endereço da entrega",
-          });
+        if (destination) {
+          if (!destMarker.current) {
+            destMarker.current = new g.maps.Marker({
+              position: destination,
+              map: mapInstance.current,
+              label: { text: "📍", color: "#fff" },
+              title: "Endereço da entrega",
+            });
+          } else {
+            destMarker.current.setPosition(destination);
+            destMarker.current.setMap(mapInstance.current);
+          }
+        } else if (destMarker.current) {
+          destMarker.current.setMap(null);
         }
 
         // Marcador da empresa (visível apenas quando não há GPS ao vivo).
@@ -175,9 +185,9 @@ function TrackPage() {
         }
 
         // Desenha rota (empresa/entregador → destino) enquanto a entrega
-        // estiver em andamento.
+        // estiver em andamento e ambos os pontos existirem.
         const active = track?.status !== "entregue" && track?.status !== "cancelada";
-        if (routeOrigin && active) {
+        if (routeOrigin && destination && active) {
           if (!directionsService.current) {
             directionsService.current = new g.maps.DirectionsService();
           }
@@ -203,23 +213,25 @@ function TrackPage() {
             },
             (result, status) => {
               if (cancelled) return;
+              const bounds = new g.maps.LatLngBounds();
+              bounds.extend(destination);
+              bounds.extend(routeOrigin);
               if (status === g.maps.DirectionsStatus.OK && result) {
                 directionsRenderer.current?.setDirections(result);
-                const bounds = new g.maps.LatLngBounds();
-                bounds.extend(destination);
-                bounds.extend(routeOrigin);
-                mapInstance.current?.fitBounds(bounds, 80);
-              } else {
-                const bounds = new g.maps.LatLngBounds();
-                bounds.extend(destination);
-                bounds.extend(routeOrigin);
-                mapInstance.current?.fitBounds(bounds, 80);
               }
+              mapInstance.current?.fitBounds(bounds, 80);
             },
           );
         } else {
           if (directionsRenderer.current) directionsRenderer.current.setMap(null);
-          mapInstance.current.setCenter(destination);
+          // Ajusta o enquadramento aos pontos disponíveis.
+          const bounds = new g.maps.LatLngBounds();
+          let count = 0;
+          if (destination) { bounds.extend(destination); count++; }
+          if (driver) { bounds.extend({ lat: driver.lat, lng: driver.lng }); count++; }
+          if (!driver && companyOrigin) { bounds.extend(companyOrigin); count++; }
+          if (count > 1) mapInstance.current.fitBounds(bounds, 80);
+          else mapInstance.current.setCenter(center);
         }
       })
       .catch(() => setMapUnavailable(true));
@@ -227,6 +239,7 @@ function TrackPage() {
       cancelled = true;
     };
   }, [destination, driver, companyOrigin, routeOrigin, track?.status, track?.empresa, mapUnavailable]);
+
 
   const openInMaps = () => {
     if (!destination) return;
