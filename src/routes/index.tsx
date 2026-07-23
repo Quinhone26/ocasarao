@@ -843,7 +843,9 @@ function Index() {
                 Enviada ao tocar em WhatsApp no card da entrega. Variáveis:{" "}
                 <code className="text-[11px]">{"{cliente} {empresa} {endereco} {valor} {pagamento} {maps} {saudacao} {observacoes}"}</code>
               </p>
+            </div>
             <div className="space-y-1.5">
+
               <Label htmlFor="company-endereco">Endereço da empresa (origem das entregas)</Label>
               <Input
                 id="company-endereco"
