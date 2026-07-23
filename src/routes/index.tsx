@@ -73,6 +73,8 @@ function Index() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [companyDraft, setCompanyDraft] = useState(company);
   useEffect(() => { setCompanyDraft(company); }, [company, settingsOpen]);
+  const [geocodingOrigem, setGeocodingOrigem] = useState(false);
+  const geocodeAddressFn = useServerFn(geocodeAddressServerFn);
 
 
   const counts = useMemo(() => {
