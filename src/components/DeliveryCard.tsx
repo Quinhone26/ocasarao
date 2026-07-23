@@ -1,4 +1,4 @@
-import { Navigation, Pencil, Trash2, CheckCircle2, Phone, MapPin, Clock, CalendarClock, Printer } from "lucide-react";
+import { Navigation, Pencil, Trash2, CheckCircle2, Phone, MapPin, Clock, CalendarClock, Printer, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "./StatusBadge";
 import type { Delivery } from "@/lib/deliveries";
