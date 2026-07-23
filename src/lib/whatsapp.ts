@@ -1,6 +1,7 @@
 import type { Delivery } from "@/lib/deliveries";
 import { formatBRL, buildMapsUrl } from "@/lib/deliveries";
 import type { CompanySettings } from "@/lib/company-settings";
+import { normalizeBrPhone } from "@/lib/masks";
 
 /**
  * Substitui placeholders no template do WhatsApp.
