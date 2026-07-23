@@ -106,12 +106,7 @@ function Index() {
 
   const dayItems = useMemo(() => {
     return items
-      .filter((d) => {
-        const dt = new Date(d.dataHora);
-        const pad = (n: number) => String(n).padStart(2, "0");
-        const key = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
-        return key === reportDay;
-      })
+      .filter((d) => toDayKey(d.dataHora) === reportDay)
       .sort((a, b) => +new Date(b.dataHora) - +new Date(a.dataHora));
   }, [items, reportDay]);
 
@@ -130,9 +125,8 @@ function Index() {
   const daysSummary = useMemo(() => {
     const map = new Map<string, number>();
     for (const d of items) {
-      const dt = new Date(d.dataHora);
-      const pad = (n: number) => String(n).padStart(2, "0");
-      const key = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+      const key = toDayKey(d.dataHora);
+      if (!key) continue;
       map.set(key, (map.get(key) ?? 0) + 1);
     }
     return Array.from(map.entries())
