@@ -1,8 +1,7 @@
 /// <reference types="google.maps" />
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MapPin, Loader2, Navigation, CheckCircle2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { MapPin, Loader2, CheckCircle2 } from "lucide-react";
 import {
   fetchPublicTrack,
   fetchDriverLocation,
@@ -33,8 +32,8 @@ export const Route = createFileRoute("/r/$code")({
 
 function statusLabel(s: PublicTrack["status"]): string {
   return {
-    pendente: "Aguardando saída",
-    em_rota: "A caminho 🛵",
+    pendente: "Seu pedido está a caminho 🛵",
+    em_rota: "Seu pedido está a caminho 🛵",
     entregue: "Entregue",
     cancelada: "Cancelada",
   }[s];
@@ -241,15 +240,6 @@ function TrackPage() {
   }, [destination, driver, companyOrigin, routeOrigin, track?.status, track?.empresa, mapUnavailable]);
 
 
-  const openInMaps = () => {
-    if (!destination) return;
-    const dest = `${destination.lat},${destination.lng}`;
-    const origin = routeOrigin ? `${routeOrigin.lat},${routeOrigin.lng}` : "";
-    const url =
-      `https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=${dest}` +
-      (origin ? `&origin=${origin}` : "");
-    window.open(url, "_blank", "noopener");
-  };
 
   if (loading) {
     return (
@@ -336,7 +326,7 @@ function TrackPage() {
           <p className="text-sm font-medium">{enderecoTxt}</p>
         </div>
 
-        {track.status === "em_rota" && driver && (
+        {!isDone && track.status !== "cancelada" && driver && (
           <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-sm">
             <p className="font-medium text-primary">🛵 Entregador a caminho</p>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -345,15 +335,15 @@ function TrackPage() {
           </div>
         )}
 
-        {track.status === "em_rota" && !driver && companyOrigin && (
+        {!isDone && track.status !== "cancelada" && !driver && companyOrigin && (
           <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
             Rota traçada a partir de {track.empresa || "nossa loja"} até seu endereço.
           </div>
         )}
 
-        {track.status === "em_rota" && !driver && !companyOrigin && (
+        {!isDone && track.status !== "cancelada" && !driver && !companyOrigin && (
           <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-            Aguardando o entregador ligar o GPS…
+            Aguardando localização…
           </div>
         )}
 
@@ -363,15 +353,6 @@ function TrackPage() {
           </div>
         )}
 
-        <Button
-          onClick={openInMaps}
-          disabled={!destination}
-          variant="outline"
-          className="w-full h-11 rounded-xl"
-        >
-          <Navigation className="w-4 h-4" />
-          Abrir no Google Maps
-        </Button>
       </main>
     </div>
   );
