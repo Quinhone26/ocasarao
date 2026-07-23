@@ -20,6 +20,8 @@ import { printComanda } from "@/lib/print-comanda";
 import { useCompanySettings, DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/company-settings";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 import { isValidBrPhone } from "@/lib/masks";
+import { useServerFn } from "@tanstack/react-start";
+import { geocodeAddress as geocodeAddressServerFn } from "@/lib/routes.functions";
 
 export const Route = createFileRoute("/")({
   component: Index,
