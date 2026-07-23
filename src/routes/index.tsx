@@ -911,7 +911,7 @@ function Index() {
               onClick={async () => {
                 try {
                   await setCompany({
-                    nome: companyDraft.nome.trim() || "RotaExpress",
+                    nome: companyDraft.nome.trim() || "O Casarão",
                     saudacao: companyDraft.saudacao.trim(),
                     whatsappTemplate: companyDraft.whatsappTemplate.trim() || DEFAULT_WHATSAPP_TEMPLATE,
                     enderecoOrigem: companyDraft.enderecoOrigem.trim(),
