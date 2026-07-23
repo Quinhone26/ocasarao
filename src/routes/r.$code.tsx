@@ -102,7 +102,20 @@ function TrackPage() {
     return { lat: track.lat, lng: track.lng };
   }, [track]);
 
-  // Renderiza / atualiza o mapa com pino do destino e do entregador.
+  const companyOrigin = useMemo(() => {
+    if (!track || track.origem_lat == null || track.origem_lng == null) return null;
+    return { lat: track.origem_lat, lng: track.origem_lng };
+  }, [track]);
+
+  // A origem preferida é a posição ao vivo do entregador; se não houver, usa o
+  // endereço da empresa para desenhar a rota até o cliente.
+  const routeOrigin = useMemo(() => {
+    if (driver) return { lat: driver.lat, lng: driver.lng };
+    if (companyOrigin) return companyOrigin;
+    return null;
+  }, [driver, companyOrigin]);
+
+  // Renderiza / atualiza o mapa com pino do destino, do entregador e da rota.
   useEffect(() => {
     if (mapUnavailable || !mapRef.current || !destination) return;
     let cancelled = false;
@@ -126,6 +139,24 @@ function TrackPage() {
             title: "Endereço da entrega",
           });
         }
+
+        // Marcador da empresa (visível apenas quando não há GPS ao vivo).
+        if (companyOrigin && !driver) {
+          if (!originMarker.current) {
+            originMarker.current = new g.maps.Marker({
+              position: companyOrigin,
+              map: mapInstance.current,
+              label: { text: "🏠", color: "#fff" },
+              title: track?.empresa || "Origem",
+            });
+          } else {
+            originMarker.current.setPosition(companyOrigin);
+            originMarker.current.setMap(mapInstance.current);
+          }
+        } else if (originMarker.current) {
+          originMarker.current.setMap(null);
+        }
+
         const driverPos = driver ? { lat: driver.lat, lng: driver.lng } : null;
         if (driverPos) {
           if (!driverMarker.current) {
@@ -138,11 +169,56 @@ function TrackPage() {
           } else {
             driverMarker.current.setPosition(driverPos);
           }
-          const bounds = new g.maps.LatLngBounds();
-          bounds.extend(destination);
-          bounds.extend(driverPos);
-          mapInstance.current.fitBounds(bounds, 80);
+        } else if (driverMarker.current) {
+          driverMarker.current.setMap(null);
+          driverMarker.current = null;
+        }
+
+        // Desenha rota (empresa/entregador → destino) enquanto a entrega
+        // estiver em andamento.
+        const active = track?.status !== "entregue" && track?.status !== "cancelada";
+        if (routeOrigin && active) {
+          if (!directionsService.current) {
+            directionsService.current = new g.maps.DirectionsService();
+          }
+          if (!directionsRenderer.current) {
+            directionsRenderer.current = new g.maps.DirectionsRenderer({
+              map: mapInstance.current,
+              suppressMarkers: true,
+              preserveViewport: true,
+              polylineOptions: {
+                strokeColor: "#2563eb",
+                strokeOpacity: 0.9,
+                strokeWeight: 5,
+              },
+            });
+          } else {
+            directionsRenderer.current.setMap(mapInstance.current);
+          }
+          directionsService.current.route(
+            {
+              origin: routeOrigin,
+              destination,
+              travelMode: g.maps.TravelMode.DRIVING,
+            },
+            (result, status) => {
+              if (cancelled) return;
+              if (status === g.maps.DirectionsStatus.OK && result) {
+                directionsRenderer.current?.setDirections(result);
+                const bounds = new g.maps.LatLngBounds();
+                bounds.extend(destination);
+                bounds.extend(routeOrigin);
+                mapInstance.current?.fitBounds(bounds, 80);
+              } else {
+                const bounds = new g.maps.LatLngBounds();
+                bounds.extend(destination);
+                bounds.extend(routeOrigin);
+                mapInstance.current?.fitBounds(bounds, 80);
+              }
+            },
+          );
         } else {
+          if (directionsRenderer.current) directionsRenderer.current.setMap(null);
           mapInstance.current.setCenter(destination);
         }
       })
@@ -150,12 +226,12 @@ function TrackPage() {
     return () => {
       cancelled = true;
     };
-  }, [destination, driver, mapUnavailable]);
+  }, [destination, driver, companyOrigin, routeOrigin, track?.status, track?.empresa, mapUnavailable]);
 
   const openInMaps = () => {
     if (!destination) return;
     const dest = `${destination.lat},${destination.lng}`;
-    const origin = driver ? `${driver.lat},${driver.lng}` : "";
+    const origin = routeOrigin ? `${routeOrigin.lat},${routeOrigin.lng}` : "";
     const url =
       `https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=${dest}` +
       (origin ? `&origin=${origin}` : "");
