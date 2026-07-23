@@ -319,7 +319,13 @@ function TrackPage() {
           </div>
         )}
 
-        {track.status === "em_rota" && !driver && (
+        {track.status === "em_rota" && !driver && companyOrigin && (
+          <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+            Rota traçada a partir de {track.empresa || "nossa loja"} até seu endereço.
+          </div>
+        )}
+
+        {track.status === "em_rota" && !driver && !companyOrigin && (
           <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
             Aguardando o entregador ligar o GPS…
           </div>
