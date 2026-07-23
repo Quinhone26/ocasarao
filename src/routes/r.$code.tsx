@@ -309,12 +309,25 @@ function TrackPage() {
             Mapa indisponível neste dispositivo. Toque em "Abrir no Google Maps"
             para ver a rota atualizada.
           </div>
+        ) : !destination && !companyOrigin && !driver ? (
+          <div className="w-full h-80 rounded-2xl border border-border bg-muted/50 grid place-items-center text-center px-6">
+            <div className="space-y-2">
+              <MapPin className="w-8 h-8 mx-auto text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                Aguardando localização da entrega…
+              </p>
+              <p className="text-xs text-muted-foreground/80">
+                O mapa aparece assim que a rota for calculada ou o entregador ligar o GPS.
+              </p>
+            </div>
+          </div>
         ) : (
           <div
             ref={mapRef}
             className="w-full h-80 rounded-2xl border border-border bg-muted overflow-hidden"
           />
         )}
+
 
         <div className="rounded-2xl border border-border bg-card p-4 space-y-2">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
