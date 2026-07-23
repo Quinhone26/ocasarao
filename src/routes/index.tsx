@@ -565,6 +565,14 @@ function Index() {
                       onDelete={() => setDeleting(d)}
                       onDeliver={() => handleDeliver(d)}
                       onPrint={() => printComanda(d)}
+                      onWhatsapp={
+                        d.telefone
+                          ? () => {
+                              const url = buildWhatsappUrl(d, company);
+                              window.open(url, "_blank", "noopener,noreferrer");
+                            }
+                          : undefined
+                      }
                       onTogglePago={async () => {
                         try {
                           await update(d.id, { pago: !d.pago });
