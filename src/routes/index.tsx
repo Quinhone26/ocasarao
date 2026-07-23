@@ -14,7 +14,7 @@ import type { Delivery, DeliveryStatus } from "@/lib/deliveries";
 import { useDeliveries, buildMapsUrl, formatBRL, statusLabel, distanceMeters } from "@/lib/deliveries";
 import { useDriverBroadcast } from "@/lib/use-driver-broadcast";
 import { useClientes, clienteKey, upsertClienteFromDelivery, updateStoredCliente, removeStoredCliente, type Cliente } from "@/lib/clientes";
-import { cn } from "@/lib/utils";
+import { cn, toDayKey } from "@/lib/utils";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { printComanda } from "@/lib/print-comanda";
 import { useCompanySettings, DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/company-settings";
@@ -63,11 +63,7 @@ function Index() {
   const navigatedAtRef = useRef<number>(0);
 
   // Dia selecionado no relatório (ISO yyyy-mm-dd). Default: hoje.
-  const todayISO = useMemo(() => {
-    const d = new Date();
-    const pad = (n: number) => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  }, []);
+  const todayISO = useMemo(() => toDayKey(new Date()), []);
   const [reportDay, setReportDay] = useState<string>(todayISO);
   const [company, setCompany] = useCompanySettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -110,12 +106,7 @@ function Index() {
 
   const dayItems = useMemo(() => {
     return items
-      .filter((d) => {
-        const dt = new Date(d.dataHora);
-        const pad = (n: number) => String(n).padStart(2, "0");
-        const key = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
-        return key === reportDay;
-      })
+      .filter((d) => toDayKey(d.dataHora) === reportDay)
       .sort((a, b) => +new Date(b.dataHora) - +new Date(a.dataHora));
   }, [items, reportDay]);
 
@@ -134,9 +125,8 @@ function Index() {
   const daysSummary = useMemo(() => {
     const map = new Map<string, number>();
     for (const d of items) {
-      const dt = new Date(d.dataHora);
-      const pad = (n: number) => String(n).padStart(2, "0");
-      const key = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+      const key = toDayKey(d.dataHora);
+      if (!key) continue;
       map.set(key, (map.get(key) ?? 0) + 1);
     }
     return Array.from(map.entries())
@@ -237,7 +227,7 @@ function Index() {
   };
 
   const handleNavigate = async (d: Delivery) => {
-    window.open(buildMapsUrl(d), "_blank", "noopener");
+    window.open(buildMapsUrl(d), "_blank", "noopener,noreferrer");
     if (d.status === "pendente") {
       try {
         await update(d.id, { status: "em_rota" });
