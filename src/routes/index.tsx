@@ -14,7 +14,7 @@ import type { Delivery, DeliveryStatus } from "@/lib/deliveries";
 import { useDeliveries, buildMapsUrl, formatBRL, statusLabel, distanceMeters } from "@/lib/deliveries";
 import { useDriverBroadcast } from "@/lib/use-driver-broadcast";
 import { useClientes, clienteKey, upsertClienteFromDelivery, updateStoredCliente, removeStoredCliente, type Cliente } from "@/lib/clientes";
-import { cn } from "@/lib/utils";
+import { cn, toDayKey } from "@/lib/utils";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { printComanda } from "@/lib/print-comanda";
 import { useCompanySettings, DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/company-settings";
