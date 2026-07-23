@@ -241,15 +241,6 @@ function TrackPage() {
   }, [destination, driver, companyOrigin, routeOrigin, track?.status, track?.empresa, mapUnavailable]);
 
 
-  const openInMaps = () => {
-    if (!destination) return;
-    const dest = `${destination.lat},${destination.lng}`;
-    const origin = routeOrigin ? `${routeOrigin.lat},${routeOrigin.lng}` : "";
-    const url =
-      `https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=${dest}` +
-      (origin ? `&origin=${origin}` : "");
-    window.open(url, "_blank", "noopener");
-  };
 
   if (loading) {
     return (
