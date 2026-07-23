@@ -8,8 +8,25 @@ function record(error: unknown) {
   lastCapturedError = { error, at: Date.now() };
 }
 
+// "ResizeObserver loop completed with undelivered notifications" e
+// "ResizeObserver loop limit exceeded" são avisos benignos do Chromium
+// (disparados por libs como Radix/Recharts quando um observer causa um
+// segundo layout no mesmo frame). Silenciamos para não poluir o overlay
+// de erros do preview — nunca representam falha real.
+function isBenignResizeObserverError(message: unknown): boolean {
+  return typeof message === "string" && message.includes("ResizeObserver loop");
+}
+
 if (typeof globalThis.addEventListener === "function") {
-  globalThis.addEventListener("error", (event) => record((event as ErrorEvent).error ?? event));
+  globalThis.addEventListener("error", (event) => {
+    const e = event as ErrorEvent;
+    if (isBenignResizeObserverError(e.message)) {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      return;
+    }
+    record(e.error ?? event);
+  });
   globalThis.addEventListener("unhandledrejection", (event) =>
     record((event as PromiseRejectionEvent).reason),
   );
