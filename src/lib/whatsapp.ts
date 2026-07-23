@@ -1,6 +1,7 @@
 import type { Delivery } from "@/lib/deliveries";
 import { formatBRL, buildMapsUrl } from "@/lib/deliveries";
 import type { CompanySettings } from "@/lib/company-settings";
+import { normalizeBrPhone } from "@/lib/masks";
 
 /**
  * Substitui placeholders no template do WhatsApp.
@@ -41,13 +42,13 @@ export function renderWhatsappMessage(d: Delivery, company: CompanySettings): st
   );
 }
 
-/** Monta a URL wa.me com o número do cliente e a mensagem já renderizada. */
-export function buildWhatsappUrl(d: Delivery, company: CompanySettings): string {
-  const digits = (d.telefone || "").replace(/\D/g, "");
-  // Se não tiver DDI, assume Brasil (+55).
-  const phone = digits.length > 0 && !digits.startsWith("55") && digits.length <= 11
-    ? `55${digits}`
-    : digits;
+/**
+ * Monta a URL wa.me com o número do cliente e a mensagem já renderizada.
+ * Retorna null quando o telefone é inválido/incompleto.
+ */
+export function buildWhatsappUrl(d: Delivery, company: CompanySettings): string | null {
+  const phone = normalizeBrPhone(d.telefone);
+  if (!phone) return null;
   const msg = renderWhatsappMessage(d, company);
   return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
 }

@@ -18,6 +18,7 @@ import { InstallPrompt } from "@/components/InstallPrompt";
 import { printComanda } from "@/lib/print-comanda";
 import { useCompanySettings, DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/company-settings";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
+import { isValidBrPhone } from "@/lib/masks";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -566,9 +567,13 @@ function Index() {
                       onDeliver={() => handleDeliver(d)}
                       onPrint={() => printComanda(d)}
                       onWhatsapp={
-                        d.telefone
+                        isValidBrPhone(d.telefone)
                           ? () => {
                               const url = buildWhatsappUrl(d, company);
+                              if (!url) {
+                                toast.error("Telefone do cliente inválido");
+                                return;
+                              }
                               window.open(url, "_blank", "noopener,noreferrer");
                             }
                           : undefined
