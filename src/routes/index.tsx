@@ -227,7 +227,7 @@ function Index() {
   };
 
   const handleNavigate = async (d: Delivery) => {
-    window.open(buildMapsUrl(d), "_blank", "noopener");
+    window.open(buildMapsUrl(d), "_blank", "noopener,noreferrer");
     if (d.status === "pendente") {
       try {
         await update(d.id, { status: "em_rota" });
