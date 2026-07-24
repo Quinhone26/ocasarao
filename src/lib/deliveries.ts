@@ -294,7 +294,17 @@ export function useDeliveries() {
     async (id: string, patch: Partial<Delivery>) => {
       // Valida somente os campos presentes no patch. Rejeita cedo se algo
       // como `valor: -1` chegar aqui.
-      const validated = patchSchema.parse(patch) as Partial<Delivery>;
+      // IMPORTANTE: Zod `.partial()` ainda aplica `.default()` dos campos
+      // ausentes, então filtramos o resultado para conter apenas as chaves
+      // originalmente enviadas — senão o update sobrescreve colunas do banco
+      // com strings vazias (endereço, telefone, etc.).
+      const parsed = patchSchema.parse(patch) as Partial<Delivery>;
+      const validated: Partial<Delivery> = {};
+      for (const key of Object.keys(patch) as Array<keyof Delivery>) {
+        if (parsed[key] !== undefined) {
+          (validated as Record<string, unknown>)[key] = parsed[key];
+        }
+      }
       const normalized: Partial<Delivery> = { ...validated };
       if (patch.cep !== undefined) {
         const digits = normalizeCep(patch.cep);
