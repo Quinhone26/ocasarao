@@ -1,5 +1,6 @@
 /// <reference types="google.maps" />
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { isUnlocked } from "@/lib/gate.functions";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Route as RouteIcon, Navigation, Loader2, MapPin, CheckCircle2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,10 @@ function buildNavUrl(
 }
 
 export const Route = createFileRoute("/rota")({
+  beforeLoad: async () => {
+    const { unlocked } = await isUnlocked();
+    if (!unlocked) throw redirect({ to: "/entrar" });
+  },
   component: RotaPage,
   errorComponent: ({ error, reset }) => (
     <div className="min-h-screen grid place-items-center p-6 text-center">
