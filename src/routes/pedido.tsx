@@ -279,7 +279,31 @@ function PedidoPage() {
           </>
         ) : (
           <section className="space-y-3">
-            <h2 className="text-lg font-bold">Dados para entrega</h2>
+            <h2 className="text-lg font-bold">Dados do pedido</h2>
+            <div>
+              <Label>Como você quer receber?</Label>
+              <div className="mt-1 grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={tipoEntrega === "entrega" ? "default" : "outline"}
+                  onClick={() => setTipoEntrega("entrega")}
+                  className="h-auto py-2 flex-col gap-0.5"
+                >
+                  <span className="font-semibold">Entrega</span>
+                  <span className="text-[11px] opacity-80">+ {formatBRL(TAXA_ENTREGA)}</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={tipoEntrega === "retirada" ? "default" : "outline"}
+                  onClick={() => setTipoEntrega("retirada")}
+                  className="h-auto py-2 flex-col gap-0.5"
+                >
+                  <span className="font-semibold">Retirar no local</span>
+                  <span className="text-[11px] opacity-80">sem taxa</span>
+                </Button>
+              </div>
+            </div>
+
             <div>
               <Label htmlFor="nome">Nome *</Label>
               <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} />
