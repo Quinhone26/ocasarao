@@ -10,7 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RotaRouteImport } from './routes/rota'
+import { Route as PedidoRouteImport } from './routes/pedido'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as CardapioRouteImport } from './routes/cardapio'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RCodeRouteImport } from './routes/r.$code'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
@@ -22,9 +24,19 @@ const RotaRoute = RotaRouteImport.update({
   path: '/rota',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PedidoRoute = PedidoRouteImport.update({
+  id: '/pedido',
+  path: '/pedido',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const McpRoute = McpRouteImport.update({
   id: '/mcp',
   path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CardapioRoute = CardapioRouteImport.update({
+  id: '/cardapio',
+  path: '/cardapio',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -58,7 +70,9 @@ const Char91DotmcpChar93InvokeToolToolRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/cardapio': typeof CardapioRoute
   '/mcp': typeof McpRoute
+  '/pedido': typeof PedidoRoute
   '/rota': typeof RotaRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -67,7 +81,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/cardapio': typeof CardapioRoute
   '/mcp': typeof McpRoute
+  '/pedido': typeof PedidoRoute
   '/rota': typeof RotaRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -77,7 +93,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/cardapio': typeof CardapioRoute
   '/mcp': typeof McpRoute
+  '/pedido': typeof PedidoRoute
   '/rota': typeof RotaRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -88,7 +106,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/cardapio'
     | '/mcp'
+    | '/pedido'
     | '/rota'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -97,7 +117,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/cardapio'
     | '/mcp'
+    | '/pedido'
     | '/rota'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -106,7 +128,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/cardapio'
     | '/mcp'
+    | '/pedido'
     | '/rota'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -116,7 +140,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CardapioRoute: typeof CardapioRoute
   McpRoute: typeof McpRoute
+  PedidoRoute: typeof PedidoRoute
   RotaRoute: typeof RotaRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -133,11 +159,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RotaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pedido': {
+      id: '/pedido'
+      path: '/pedido'
+      fullPath: '/pedido'
+      preLoaderRoute: typeof PedidoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mcp': {
       id: '/mcp'
       path: '/mcp'
       fullPath: '/mcp'
       preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cardapio': {
+      id: '/cardapio'
+      path: '/cardapio'
+      fullPath: '/cardapio'
+      preLoaderRoute: typeof CardapioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -180,7 +220,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CardapioRoute: CardapioRoute,
   McpRoute: McpRoute,
+  PedidoRoute: PedidoRoute,
   RotaRoute: RotaRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
