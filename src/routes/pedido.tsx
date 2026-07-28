@@ -54,13 +54,17 @@ function PedidoPage() {
   const [bairro, setBairro] = useState("");
   const [complemento, setComplemento] = useState("");
   const [pagamento, setPagamento] = useState<string>(PAGAMENTOS[0]);
+  const [tipoEntrega, setTipoEntrega] = useState<"entrega" | "retirada">("entrega");
   const [troco, setTroco] = useState("");
   const [obs, setObs] = useState("");
   const [cepBusy, setCepBusy] = useState(false);
   const [cepErro, setCepErro] = useState<string | null>(null);
 
-  const total = useMemo(() => cartTotal(cart), [cart]);
+  const subtotal = useMemo(() => cartTotal(cart), [cart]);
+  const taxaEntrega = tipoEntrega === "entrega" ? TAXA_ENTREGA : 0;
+  const total = subtotal + taxaEntrega;
   const qtdTotal = useMemo(() => cart.reduce((s, i) => s + i.qtd, 0), [cart]);
+
 
   const categorias = useMemo(() => {
     const map = new Map<string, Produto[]>();
