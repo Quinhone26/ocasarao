@@ -318,39 +318,44 @@ function PedidoPage() {
                 placeholder="(44) 90000-0000"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="cep">CEP</Label>
-                <Input
-                  id="cep"
-                  inputMode="numeric"
-                  value={cep}
-                  onChange={(e) => setCep(formatCep(e.target.value))}
-                  onBlur={handleCepBlur}
-                  placeholder="87500-000"
-                />
-              </div>
-              <div>
-                <Label htmlFor="num">Número</Label>
-                <Input id="num" value={numero} onChange={(e) => setNumero(e.target.value)} />
-              </div>
-            </div>
-            {cepBusy && <p className="text-xs text-muted-foreground">Buscando CEP…</p>}
-            {cepErro && <p className="text-xs text-destructive">{cepErro}</p>}
-            <div>
-              <Label htmlFor="end">Endereço *</Label>
-              <Input id="end" value={endereco} onChange={(e) => setEndereco(e.target.value)} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="bairro">Bairro</Label>
-                <Input id="bairro" value={bairro} onChange={(e) => setBairro(e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="compl">Complemento</Label>
-                <Input id="compl" value={complemento} onChange={(e) => setComplemento(e.target.value)} />
-              </div>
-            </div>
+            {tipoEntrega === "entrega" && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="cep">CEP</Label>
+                    <Input
+                      id="cep"
+                      inputMode="numeric"
+                      value={cep}
+                      onChange={(e) => setCep(formatCep(e.target.value))}
+                      onBlur={handleCepBlur}
+                      placeholder="87500-000"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="num">Número</Label>
+                    <Input id="num" value={numero} onChange={(e) => setNumero(e.target.value)} />
+                  </div>
+                </div>
+                {cepBusy && <p className="text-xs text-muted-foreground">Buscando CEP…</p>}
+                {cepErro && <p className="text-xs text-destructive">{cepErro}</p>}
+                <div>
+                  <Label htmlFor="end">Endereço *</Label>
+                  <Input id="end" value={endereco} onChange={(e) => setEndereco(e.target.value)} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="bairro">Bairro</Label>
+                    <Input id="bairro" value={bairro} onChange={(e) => setBairro(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label htmlFor="compl">Complemento</Label>
+                    <Input id="compl" value={complemento} onChange={(e) => setComplemento(e.target.value)} />
+                  </div>
+                </div>
+              </>
+            )}
+
             <div>
               <Label>Pagamento</Label>
               <div className="mt-1 flex flex-wrap gap-2">
