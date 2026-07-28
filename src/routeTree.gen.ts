@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as RotaRouteImport } from './routes/rota'
 import { Route as PedidoRouteImport } from './routes/pedido'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as CardapioRouteImport } from './routes/cardapio'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RCodeRouteImport } from './routes/r.$code'
@@ -32,6 +33,11 @@ const PedidoRoute = PedidoRouteImport.update({
 const McpRoute = McpRouteImport.update({
   id: '/mcp',
   path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EntrarRoute = EntrarRouteImport.update({
+  id: '/entrar',
+  path: '/entrar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CardapioRoute = CardapioRouteImport.update({
@@ -71,6 +77,7 @@ const Char91DotmcpChar93InvokeToolToolRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/cardapio': typeof CardapioRoute
+  '/entrar': typeof EntrarRoute
   '/mcp': typeof McpRoute
   '/pedido': typeof PedidoRoute
   '/rota': typeof RotaRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cardapio': typeof CardapioRoute
+  '/entrar': typeof EntrarRoute
   '/mcp': typeof McpRoute
   '/pedido': typeof PedidoRoute
   '/rota': typeof RotaRoute
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/cardapio': typeof CardapioRoute
+  '/entrar': typeof EntrarRoute
   '/mcp': typeof McpRoute
   '/pedido': typeof PedidoRoute
   '/rota': typeof RotaRoute
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/cardapio'
+    | '/entrar'
     | '/mcp'
     | '/pedido'
     | '/rota'
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/cardapio'
+    | '/entrar'
     | '/mcp'
     | '/pedido'
     | '/rota'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/cardapio'
+    | '/entrar'
     | '/mcp'
     | '/pedido'
     | '/rota'
@@ -141,6 +153,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CardapioRoute: typeof CardapioRoute
+  EntrarRoute: typeof EntrarRoute
   McpRoute: typeof McpRoute
   PedidoRoute: typeof PedidoRoute
   RotaRoute: typeof RotaRoute
@@ -171,6 +184,13 @@ declare module '@tanstack/react-router' {
       path: '/mcp'
       fullPath: '/mcp'
       preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/entrar': {
+      id: '/entrar'
+      path: '/entrar'
+      fullPath: '/entrar'
+      preLoaderRoute: typeof EntrarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cardapio': {
@@ -221,6 +241,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CardapioRoute: CardapioRoute,
+  EntrarRoute: EntrarRoute,
   McpRoute: McpRoute,
   PedidoRoute: PedidoRoute,
   RotaRoute: RotaRoute,
