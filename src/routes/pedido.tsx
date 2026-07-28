@@ -37,6 +37,8 @@ export const Route = createFileRoute("/pedido")({
 });
 
 const PAGAMENTOS = ["Dinheiro", "Pix", "Cartão na entrega"] as const;
+const TAXA_ENTREGA = 8;
+
 
 function PedidoPage() {
   const { items: produtos, loading, error } = useProdutos(true);
@@ -54,13 +56,17 @@ function PedidoPage() {
   const [bairro, setBairro] = useState("");
   const [complemento, setComplemento] = useState("");
   const [pagamento, setPagamento] = useState<string>(PAGAMENTOS[0]);
+  const [tipoEntrega, setTipoEntrega] = useState<"entrega" | "retirada">("entrega");
   const [troco, setTroco] = useState("");
   const [obs, setObs] = useState("");
   const [cepBusy, setCepBusy] = useState(false);
   const [cepErro, setCepErro] = useState<string | null>(null);
 
-  const total = useMemo(() => cartTotal(cart), [cart]);
+  const subtotal = useMemo(() => cartTotal(cart), [cart]);
+  const taxaEntrega = tipoEntrega === "entrega" ? TAXA_ENTREGA : 0;
+  const total = subtotal + taxaEntrega;
   const qtdTotal = useMemo(() => cart.reduce((s, i) => s + i.qtd, 0), [cart]);
+
 
   const categorias = useMemo(() => {
     const map = new Map<string, Produto[]>();
@@ -114,15 +120,17 @@ function PedidoPage() {
   }
 
   async function enviarPedido() {
+    const entrega = tipoEntrega === "entrega";
     if (!nome.trim()) return toast.error("Informe seu nome.");
     if (!normalizeBrPhone(telefone)) return toast.error("Informe um WhatsApp válido com DDD.");
-    if (!endereco.trim()) return toast.error("Informe o endereço da entrega.");
-    if (cepErro) return toast.error(cepErro);
+    if (entrega && !endereco.trim()) return toast.error("Informe o endereço da entrega.");
+    if (entrega && cepErro) return toast.error(cepErro);
     if (cart.length === 0) return toast.error("Seu carrinho está vazio.");
 
     const trackCode = generateTrackCode();
     const detalhes = [
       `PEDIDO ONLINE: ${cartToText(cart)}`,
+      entrega ? `Entrega (taxa ${formatBRL(taxaEntrega)})` : "RETIRADA NO LOCAL",
       `Pagamento: ${pagamento}${pagamento === "Dinheiro" && troco.trim() ? ` (troco para ${troco.trim()})` : ""}`,
       obs.trim() ? `Obs: ${obs.trim()}` : "",
     ]
@@ -134,12 +142,12 @@ function PedidoPage() {
       id: newId(),
       cliente: nome.trim(),
       telefone: telefone.trim(),
-      cep: cep.trim(),
-      endereco: endereco.trim(),
-      numero: numero.trim(),
-      bairro: bairro.trim(),
+      cep: entrega ? cep.trim() : "",
+      endereco: entrega ? endereco.trim() : "RETIRADA NO LOCAL",
+      numero: entrega ? numero.trim() : "",
+      bairro: entrega ? bairro.trim() : "",
       cidade: ALLOWED_CITY,
-      complemento: complemento.trim(),
+      complemento: entrega ? complemento.trim() : "",
       observacoes: detalhes,
       valor: total,
       data_hora: new Date().toISOString(),
@@ -151,6 +159,7 @@ function PedidoPage() {
       criado_em: new Date().toISOString(),
       track_code: trackCode,
     });
+
     setSending(false);
 
     if (insertError) {
@@ -279,7 +288,31 @@ function PedidoPage() {
           </>
         ) : (
           <section className="space-y-3">
-            <h2 className="text-lg font-bold">Dados para entrega</h2>
+            <h2 className="text-lg font-bold">Dados do pedido</h2>
+            <div>
+              <Label>Como você quer receber?</Label>
+              <div className="mt-1 grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={tipoEntrega === "entrega" ? "default" : "outline"}
+                  onClick={() => setTipoEntrega("entrega")}
+                  className="h-auto py-2 flex-col gap-0.5"
+                >
+                  <span className="font-semibold">Entrega</span>
+                  <span className="text-[11px] opacity-80">+ {formatBRL(TAXA_ENTREGA)}</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={tipoEntrega === "retirada" ? "default" : "outline"}
+                  onClick={() => setTipoEntrega("retirada")}
+                  className="h-auto py-2 flex-col gap-0.5"
+                >
+                  <span className="font-semibold">Retirar no local</span>
+                  <span className="text-[11px] opacity-80">sem taxa</span>
+                </Button>
+              </div>
+            </div>
+
             <div>
               <Label htmlFor="nome">Nome *</Label>
               <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} />
@@ -294,39 +327,44 @@ function PedidoPage() {
                 placeholder="(44) 90000-0000"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="cep">CEP</Label>
-                <Input
-                  id="cep"
-                  inputMode="numeric"
-                  value={cep}
-                  onChange={(e) => setCep(formatCep(e.target.value))}
-                  onBlur={handleCepBlur}
-                  placeholder="87500-000"
-                />
-              </div>
-              <div>
-                <Label htmlFor="num">Número</Label>
-                <Input id="num" value={numero} onChange={(e) => setNumero(e.target.value)} />
-              </div>
-            </div>
-            {cepBusy && <p className="text-xs text-muted-foreground">Buscando CEP…</p>}
-            {cepErro && <p className="text-xs text-destructive">{cepErro}</p>}
-            <div>
-              <Label htmlFor="end">Endereço *</Label>
-              <Input id="end" value={endereco} onChange={(e) => setEndereco(e.target.value)} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="bairro">Bairro</Label>
-                <Input id="bairro" value={bairro} onChange={(e) => setBairro(e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="compl">Complemento</Label>
-                <Input id="compl" value={complemento} onChange={(e) => setComplemento(e.target.value)} />
-              </div>
-            </div>
+            {tipoEntrega === "entrega" && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="cep">CEP</Label>
+                    <Input
+                      id="cep"
+                      inputMode="numeric"
+                      value={cep}
+                      onChange={(e) => setCep(formatCep(e.target.value))}
+                      onBlur={handleCepBlur}
+                      placeholder="87500-000"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="num">Número</Label>
+                    <Input id="num" value={numero} onChange={(e) => setNumero(e.target.value)} />
+                  </div>
+                </div>
+                {cepBusy && <p className="text-xs text-muted-foreground">Buscando CEP…</p>}
+                {cepErro && <p className="text-xs text-destructive">{cepErro}</p>}
+                <div>
+                  <Label htmlFor="end">Endereço *</Label>
+                  <Input id="end" value={endereco} onChange={(e) => setEndereco(e.target.value)} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="bairro">Bairro</Label>
+                    <Input id="bairro" value={bairro} onChange={(e) => setBairro(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label htmlFor="compl">Complemento</Label>
+                    <Input id="compl" value={complemento} onChange={(e) => setComplemento(e.target.value)} />
+                  </div>
+                </div>
+              </>
+            )}
+
             <div>
               <Label>Pagamento</Label>
               <div className="mt-1 flex flex-wrap gap-2">
@@ -369,11 +407,20 @@ function PedidoPage() {
                   <span>{formatBRL(i.produto.preco * i.qtd)}</span>
                 </div>
               ))}
+              <div className="mt-2 flex justify-between text-muted-foreground">
+                <span>Subtotal</span>
+                <span>{formatBRL(subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>{tipoEntrega === "entrega" ? "Taxa de entrega" : "Retirada no balcão"}</span>
+                <span>{taxaEntrega > 0 ? formatBRL(taxaEntrega) : "Grátis"}</span>
+              </div>
               <div className="mt-2 flex justify-between font-bold">
                 <span>Total</span>
                 <span>{formatBRL(total)}</span>
               </div>
             </div>
+
 
             <Button variant="ghost" className="w-full" onClick={() => setStep("menu")}>
               Voltar ao cardápio
