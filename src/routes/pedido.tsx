@@ -37,6 +37,8 @@ export const Route = createFileRoute("/pedido")({
 });
 
 const PAGAMENTOS = ["Dinheiro", "Pix", "Cartão na entrega"] as const;
+const TAXA_ENTREGA = 8;
+
 
 function PedidoPage() {
   const { items: produtos, loading, error } = useProdutos(true);
