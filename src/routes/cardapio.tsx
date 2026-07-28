@@ -51,6 +51,24 @@ function CardapioAdmin() {
   const [editing, setEditing] = useState<Produto | undefined>();
   const [form, setForm] = useState({ ...EMPTY });
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadProdutoImagem(file);
+      setForm((f) => ({ ...f, imagemUrl: url }));
+      toast.success("Imagem enviada");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao enviar imagem");
+    } finally {
+      setUploading(false);
+    }
+  }
+
 
   function openNew() {
     setEditing(undefined);
