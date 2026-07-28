@@ -114,15 +114,17 @@ function PedidoPage() {
   }
 
   async function enviarPedido() {
+    const entrega = tipoEntrega === "entrega";
     if (!nome.trim()) return toast.error("Informe seu nome.");
     if (!normalizeBrPhone(telefone)) return toast.error("Informe um WhatsApp válido com DDD.");
-    if (!endereco.trim()) return toast.error("Informe o endereço da entrega.");
-    if (cepErro) return toast.error(cepErro);
+    if (entrega && !endereco.trim()) return toast.error("Informe o endereço da entrega.");
+    if (entrega && cepErro) return toast.error(cepErro);
     if (cart.length === 0) return toast.error("Seu carrinho está vazio.");
 
     const trackCode = generateTrackCode();
     const detalhes = [
       `PEDIDO ONLINE: ${cartToText(cart)}`,
+      entrega ? `Entrega (taxa ${formatBRL(taxaEntrega)})` : "RETIRADA NO LOCAL",
       `Pagamento: ${pagamento}${pagamento === "Dinheiro" && troco.trim() ? ` (troco para ${troco.trim()})` : ""}`,
       obs.trim() ? `Obs: ${obs.trim()}` : "",
     ]
@@ -134,12 +136,12 @@ function PedidoPage() {
       id: newId(),
       cliente: nome.trim(),
       telefone: telefone.trim(),
-      cep: cep.trim(),
-      endereco: endereco.trim(),
-      numero: numero.trim(),
-      bairro: bairro.trim(),
+      cep: entrega ? cep.trim() : "",
+      endereco: entrega ? endereco.trim() : "RETIRADA NO LOCAL",
+      numero: entrega ? numero.trim() : "",
+      bairro: entrega ? bairro.trim() : "",
       cidade: ALLOWED_CITY,
-      complemento: complemento.trim(),
+      complemento: entrega ? complemento.trim() : "",
       observacoes: detalhes,
       valor: total,
       data_hora: new Date().toISOString(),
@@ -151,6 +153,7 @@ function PedidoPage() {
       criado_em: new Date().toISOString(),
       track_code: trackCode,
     });
+
     setSending(false);
 
     if (insertError) {
