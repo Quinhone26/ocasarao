@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, Plus, Pencil, Trash2, Copy, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Copy, Loader2, ImagePlus } from "lucide-react";
+import { uploadProdutoImagem } from "@/lib/upload-imagem";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -51,6 +53,24 @@ function CardapioAdmin() {
   const [editing, setEditing] = useState<Produto | undefined>();
   const [form, setForm] = useState({ ...EMPTY });
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadProdutoImagem(file);
+      setForm((f) => ({ ...f, imagemUrl: url }));
+      toast.success("Imagem enviada");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao enviar imagem");
+    } finally {
+      setUploading(false);
+    }
+  }
+
 
   function openNew() {
     setEditing(undefined);
@@ -220,14 +240,46 @@ function CardapioAdmin() {
               </div>
             </div>
             <div>
-              <Label htmlFor="p-img">URL da imagem (opcional)</Label>
-              <Input
-                id="p-img"
-                value={form.imagemUrl}
-                onChange={(e) => setForm({ ...form, imagemUrl: e.target.value })}
-                placeholder="https://…"
-              />
+              <Label htmlFor="p-img">Foto do produto (opcional)</Label>
+              <div className="mt-1 flex items-center gap-3">
+                {form.imagemUrl ? (
+                  <img
+                    src={form.imagemUrl}
+                    alt="Prévia do produto"
+                    className="w-16 h-16 rounded-lg object-cover border"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-lg border border-dashed grid place-items-center text-muted-foreground">
+                    <ImagePlus className="w-5 h-5" />
+                  </div>
+                )}
+                <div className="flex-1 space-y-2">
+                  <Input
+                    id="p-img"
+                    type="file"
+                    accept="image/*"
+                    disabled={uploading}
+                    onChange={handleFile}
+                  />
+                  {uploading && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Enviando imagem…
+                    </p>
+                  )}
+                  {form.imagemUrl && !uploading && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setForm((f) => ({ ...f, imagemUrl: "" }))}
+                    >
+                      Remover foto
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
+
             <div className="grid grid-cols-2 gap-3 items-end">
               <div>
                 <Label htmlFor="p-ordem">Ordem</Label>
