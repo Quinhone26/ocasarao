@@ -490,6 +490,14 @@ function Index() {
               <SettingsIcon className="w-5 h-5" />
             </button>
             <Link
+              to="/cardapio"
+              className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-primary-foreground/10 hover:bg-primary-foreground/20"
+              aria-label="Cardápio e link de pedido online"
+            >
+              <ClipboardList className="w-5 h-5" />
+            </Link>
+            <Link
+
               to="/rota"
               className="inline-flex items-center gap-1.5 h-10 px-3 rounded-xl bg-accent text-accent-foreground text-sm font-semibold shadow-elevated hover:bg-accent/90"
               aria-label="Montar rota otimizada"
