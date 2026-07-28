@@ -369,11 +369,20 @@ function PedidoPage() {
                   <span>{formatBRL(i.produto.preco * i.qtd)}</span>
                 </div>
               ))}
+              <div className="mt-2 flex justify-between text-muted-foreground">
+                <span>Subtotal</span>
+                <span>{formatBRL(subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>{tipoEntrega === "entrega" ? "Taxa de entrega" : "Retirada no balcão"}</span>
+                <span>{taxaEntrega > 0 ? formatBRL(taxaEntrega) : "Grátis"}</span>
+              </div>
               <div className="mt-2 flex justify-between font-bold">
                 <span>Total</span>
                 <span>{formatBRL(total)}</span>
               </div>
             </div>
+
 
             <Button variant="ghost" className="w-full" onClick={() => setStep("menu")}>
               Voltar ao cardápio
