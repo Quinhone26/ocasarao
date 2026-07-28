@@ -45,7 +45,6 @@ function PedidoPage() {
   const [step, setStep] = useState<"menu" | "dados">("menu");
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState<{ track: string | null } | null>(null);
-  const navigate = useNavigate();
 
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
