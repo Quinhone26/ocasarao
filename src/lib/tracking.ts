@@ -12,25 +12,14 @@ export function generateTrackCode(): string {
   return out;
 }
 
-// Domínio público usado nos links enviados ao cliente.
-// Defina VITE_PUBLIC_SITE_URL (ex.: https://ocasarao.com.br) ao conectar
-// um domínio próprio — assim o link deixa de mostrar ".lovable.app".
-export function publicBaseUrl(): string {
-  const configured = import.meta.env?.VITE_PUBLIC_SITE_URL as string | undefined;
-  if (configured) return configured.replace(/\/+$/, "");
-  return "https://ocasarao.lovable.app";
-}
-
 export function buildTrackUrl(code: string | null | undefined): string | null {
   if (!code) return null;
-  return `${publicBaseUrl()}/r/${code}`;
+  const origin =
+    typeof window !== "undefined" && window.location?.origin
+      ? window.location.origin
+      : "https://ocasarao.lovable.app";
+  return `${origin}/r/${code}`;
 }
-
-// Link da página de pedidos do cliente.
-export function buildOrderUrl(): string {
-  return `${publicBaseUrl()}/pedido`;
-}
-
 
 export type DriverLocation = {
   lat: number;
