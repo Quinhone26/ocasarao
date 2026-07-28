@@ -22,7 +22,16 @@ export async function uploadProdutoImagem(file: File): Promise<string> {
   });
   if (error) {
     console.error("[upload] produtos", error);
-    throw new Error("Não consegui enviar a imagem. Verifique o storage e tente de novo.");
+    const msg = (error as { message?: string }).message || "";
+    if (/bucket not found/i.test(msg)) {
+      throw new Error(
+        'O armazenamento de imagens ainda não foi criado. Rode o SQL de "storage-produtos" no banco para criar o bucket "produtos".',
+      );
+    }
+    if (/row-level security|not authorized|403/i.test(msg)) {
+      throw new Error("Sem permissão para enviar imagens. Verifique as políticas do bucket \"produtos\".");
+    }
+    throw new Error(`Não consegui enviar a imagem: ${msg || "erro desconhecido no storage"}`);
   }
 
   const { data } = supabase.storage.from(PRODUTOS_BUCKET).getPublicUrl(path);
