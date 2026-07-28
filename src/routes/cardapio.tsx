@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { isUnlocked } from "@/lib/gate.functions";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowLeft, Plus, Pencil, Trash2, Copy, Loader2, ImagePlus } from "lucide-react";
 import { uploadProdutoImagem } from "@/lib/upload-imagem";
@@ -21,6 +22,10 @@ import { formatBRL } from "@/lib/deliveries";
 import { formatCurrencyFromDigits, parseCurrencyToNumber, currencyMaskFromNumber } from "@/lib/masks";
 
 export const Route = createFileRoute("/cardapio")({
+  beforeLoad: async () => {
+    const { unlocked } = await isUnlocked();
+    if (!unlocked) throw redirect({ to: "/entrar" });
+  },
   head: () => ({
     meta: [
       { title: "Cardápio — O Casarão" },

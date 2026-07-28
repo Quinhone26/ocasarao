@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { isUnlocked } from "@/lib/gate.functions";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Search, Bike, BarChart3, ClipboardList, Route as RouteIcon, Users, Phone, MapPin, Pencil, Trash2, Calendar as CalendarIcon, Settings as SettingsIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { geocodeAddress as geocodeAddressServerFn } from "@/lib/routes.functions";
 
 export const Route = createFileRoute("/")({
+  beforeLoad: async () => {
+    const { unlocked } = await isUnlocked();
+    if (!unlocked) throw redirect({ to: "/entrar" });
+  },
   component: Index,
   errorComponent: ({ error, reset }) => (
     <div className="min-h-screen grid place-items-center bg-background p-6 text-center">
