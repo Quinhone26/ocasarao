@@ -85,9 +85,16 @@ export function PixQrCode({ amount, merchantName, customerName, trackCode }: Pro
         {copied ? "Copiado!" : "Copiar código Pix"}
       </Button>
 
+      <Button asChild className="mt-2 w-full gap-2">
+        <a href={waUrl} target="_blank" rel="noopener noreferrer">
+          <MessageCircle className="w-4 h-4" /> Enviar comprovante no WhatsApp
+        </a>
+      </Button>
+
       <p className="mt-2 text-[11px] text-muted-foreground">
-        Após o pagamento, envie o pedido e nos mande o comprovante pelo WhatsApp.
+        Depois de pagar, toque no botão acima e anexe o comprovante para confirmarmos seu pedido.
       </p>
+
     </div>
   );
 }
