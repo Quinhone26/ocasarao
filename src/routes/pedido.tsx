@@ -14,6 +14,7 @@ import { formatPhone, normalizeBrPhone } from "@/lib/masks";
 import { generateTrackCode, buildTrackUrl } from "@/lib/tracking";
 import { useCompanySettings } from "@/lib/company-settings";
 import { newId } from "@/lib/utils";
+import { PixQrCode } from "@/components/PixQrCode";
 
 export const Route = createFileRoute("/pedido")({
   head: () => ({
@@ -184,6 +185,11 @@ function PedidoPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             Recebemos seu pedido de {formatBRL(total)}. Em instantes ele sai para entrega.
           </p>
+          {pagamento === "Pix" && total > 0 && (
+            <div className="mt-5 text-left">
+              <PixQrCode amount={total} merchantName={company.nome} />
+            </div>
+          )}
           {url && (
             <Button asChild className="mt-6 w-full">
               <a href={url}>Acompanhar minha entrega</a>
@@ -391,6 +397,9 @@ function PedidoPage() {
                   placeholder="Ex.: R$ 100,00"
                 />
               </div>
+            )}
+            {pagamento === "Pix" && total > 0 && (
+              <PixQrCode amount={total} merchantName={company.nome} />
             )}
             <div>
               <Label htmlFor="obs">Observações</Label>
