@@ -1,4 +1,6 @@
 export const PIX_KEY = "44997609919";
+/** Número (E.164 sem +) para receber o comprovante do Pix. */
+export const PIX_WHATSAPP = "5544997609919";
 
 function tag(id: string, value: string): string {
   const len = value.length.toString().padStart(2, "0");
