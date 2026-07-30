@@ -1,20 +1,33 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { Copy, Check, Loader2 } from "lucide-react";
+import { Copy, Check, Loader2, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { buildPixPayload, formatPixKey, PIX_KEY } from "@/lib/pix";
+import { buildPixPayload, formatPixKey, PIX_KEY, PIX_WHATSAPP } from "@/lib/pix";
 import { formatBRL } from "@/lib/deliveries";
 
 type Props = {
   amount: number;
   merchantName?: string;
+  customerName?: string;
+  trackCode?: string | null;
 };
 
-export function PixQrCode({ amount, merchantName }: Props) {
+export function PixQrCode({ amount, merchantName, customerName, trackCode }: Props) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const payload = buildPixPayload({ amount, merchantName });
+
+  const waMessage = [
+    `Olá! Acabei de pagar meu pedido${customerName ? ` (${customerName})` : ""} via Pix.`,
+    `Valor: ${formatBRL(amount)}`,
+    trackCode ? `Pedido: ${trackCode}` : "",
+    "Segue o comprovante em anexo 📎",
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const waUrl = `https://wa.me/${PIX_WHATSAPP}?text=${encodeURIComponent(waMessage)}`;
+
 
   useEffect(() => {
     let alive = true;
@@ -72,9 +85,16 @@ export function PixQrCode({ amount, merchantName }: Props) {
         {copied ? "Copiado!" : "Copiar código Pix"}
       </Button>
 
+      <Button asChild className="mt-2 w-full gap-2">
+        <a href={waUrl} target="_blank" rel="noopener noreferrer">
+          <MessageCircle className="w-4 h-4" /> Enviar comprovante no WhatsApp
+        </a>
+      </Button>
+
       <p className="mt-2 text-[11px] text-muted-foreground">
-        Após o pagamento, envie o pedido e nos mande o comprovante pelo WhatsApp.
+        Depois de pagar, toque no botão acima e anexe o comprovante para confirmarmos seu pedido.
       </p>
+
     </div>
   );
 }
