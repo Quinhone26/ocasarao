@@ -28,6 +28,23 @@ function sanitize(text: string, max: number): string {
     .toUpperCase();
 }
 
+/**
+ * Normaliza a chave para o formato exigido pelo BR Code.
+ * Telefone precisa ir como +55DDDNUMERO; e-mail/EVP vão como estão.
+ */
+export function normalizePixKey(raw: string = PIX_KEY): string {
+  const key = raw.trim();
+  if (key.includes("@")) return key.toLowerCase();
+  const d = key.replace(/\D/g, "");
+  if (!d) return key;
+  // EVP (chave aleatória)
+  if (/^[0-9a-fA-F-]{36}$/.test(key)) return key.toLowerCase();
+  if (d.length === 14) return d; // CNPJ
+  if (d.length === 10 || d.length === 11) return `+55${d}`; // telefone com DDD
+  if (d.length === 12 || d.length === 13) return `+${d}`; // já com 55
+  return d;
+}
+
 export type PixPayloadInput = {
   key?: string;
   amount: number;
@@ -45,10 +62,13 @@ export function buildPixPayload({
   txid = "***",
 }: PixPayloadInput): string {
   const merchantAccount =
-    tag("00", "br.gov.bcb.pix") + tag("01", key.replace(/\s/g, ""));
+    tag("00", "br.gov.bcb.pix") + tag("01", normalizePixKey(key));
+
+  const cleanTxid = txid === "***" ? "***" : sanitize(txid, 25) || "***";
 
   let payload =
     tag("00", "01") +
+    tag("01", "12") +
     tag("26", merchantAccount) +
     tag("52", "0000") +
     tag("53", "986") +
@@ -56,11 +76,12 @@ export function buildPixPayload({
     tag("58", "BR") +
     tag("59", sanitize(merchantName, 25) || "RECEBEDOR") +
     tag("60", sanitize(merchantCity, 15) || "UMUARAMA") +
-    tag("62", tag("05", sanitize(txid, 25) || "***"));
+    tag("62", tag("05", cleanTxid));
 
   payload += "6304";
   return payload + crc16(payload);
 }
+
 
 /** Formata a chave (CPF/CNPJ/telefone) para exibição. */
 export function formatPixKey(key: string = PIX_KEY): string {
