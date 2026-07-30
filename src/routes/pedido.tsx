@@ -405,7 +405,7 @@ function PedidoPage() {
               </div>
             )}
             {pagamento === "Pix" && total > 0 && (
-              <PixQrCode amount={total} merchantName={company.nome} />
+              <PixQrCode amount={total} merchantName={company.nome} customerName={nome.trim()} />
             )}
             <div>
               <Label htmlFor="obs">Observações</Label>
