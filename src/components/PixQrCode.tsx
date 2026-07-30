@@ -1,20 +1,33 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { Copy, Check, Loader2 } from "lucide-react";
+import { Copy, Check, Loader2, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { buildPixPayload, formatPixKey, PIX_KEY } from "@/lib/pix";
+import { buildPixPayload, formatPixKey, PIX_KEY, PIX_WHATSAPP } from "@/lib/pix";
 import { formatBRL } from "@/lib/deliveries";
 
 type Props = {
   amount: number;
   merchantName?: string;
+  customerName?: string;
+  trackCode?: string | null;
 };
 
-export function PixQrCode({ amount, merchantName }: Props) {
+export function PixQrCode({ amount, merchantName, customerName, trackCode }: Props) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const payload = buildPixPayload({ amount, merchantName });
+
+  const waMessage = [
+    `Olá! Acabei de pagar meu pedido${customerName ? ` (${customerName})` : ""} via Pix.`,
+    `Valor: ${formatBRL(amount)}`,
+    trackCode ? `Pedido: ${trackCode}` : "",
+    "Segue o comprovante em anexo 📎",
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const waUrl = `https://wa.me/${PIX_WHATSAPP}?text=${encodeURIComponent(waMessage)}`;
+
 
   useEffect(() => {
     let alive = true;
