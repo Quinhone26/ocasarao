@@ -187,7 +187,13 @@ function PedidoPage() {
           </p>
           {pagamento === "Pix" && total > 0 && (
             <div className="mt-5 text-left">
-              <PixQrCode amount={total} merchantName={company.nome} />
+              <PixQrCode
+                amount={total}
+                merchantName={company.nome}
+                customerName={nome.trim()}
+                trackCode={done.track}
+              />
+
             </div>
           )}
           {url && (
