@@ -14,6 +14,7 @@ import { formatPhone, normalizeBrPhone } from "@/lib/masks";
 import { generateTrackCode, buildTrackUrl } from "@/lib/tracking";
 import { useCompanySettings } from "@/lib/company-settings";
 import { newId } from "@/lib/utils";
+import { PixQrCode } from "@/components/PixQrCode";
 
 export const Route = createFileRoute("/pedido")({
   head: () => ({
