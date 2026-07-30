@@ -185,6 +185,11 @@ function PedidoPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             Recebemos seu pedido de {formatBRL(total)}. Em instantes ele sai para entrega.
           </p>
+          {pagamento === "Pix" && total > 0 && (
+            <div className="mt-5 text-left">
+              <PixQrCode amount={total} merchantName={company.nome} />
+            </div>
+          )}
           {url && (
             <Button asChild className="mt-6 w-full">
               <a href={url}>Acompanhar minha entrega</a>
