@@ -426,6 +426,21 @@ export function DeliveryForm({
           />
         </div>
       </div>
+      <div className="space-y-1.5">
+        <Label>Forma de pagamento</Label>
+        <div className="grid grid-cols-3 gap-2">
+          {FORMAS_PAGAMENTO.map((f) => (
+            <Button
+              key={f}
+              type="button"
+              variant={forma === f ? "default" : "outline"}
+              onClick={() => setForma((prev) => (prev === f ? "" : f))}
+            >
+              {f}
+            </Button>
+          ))}
+        </div>
+      </div>
       <label
         htmlFor="pago-switch"
         className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 cursor-pointer"
