@@ -131,12 +131,14 @@ function PedidoPage() {
     const entrega = tipoEntrega === "entrega";
     if (!nome.trim()) return toast.error("Informe seu nome.");
     if (!normalizeBrPhone(telefone)) return toast.error("Informe um WhatsApp válido com DDD.");
+    if (entrega && !cep.trim()) return toast.error("Informe o CEP da entrega.");
+    if (entrega && !isValidCep(cep)) return toast.error("CEP inválido — precisa ter 8 dígitos.");
     if (entrega && !endereco.trim()) return toast.error("Informe o endereço da entrega.");
     if (entrega && cepErro) return toast.error(cepErro);
     if (cart.length === 0) return toast.error("Seu carrinho está vazio.");
-    if (entrega && !cep.trim()) return toast.error("Informe o CEP da entrega.");
 
     if (total <= 0) return toast.error("Valor do pedido inválido.");
+
 
     const trackCode = generateTrackCode();
     const detalhes = [
@@ -375,7 +377,7 @@ function PedidoPage() {
               <>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="cep">CEP</Label>
+                    <Label htmlFor="cep">CEP *</Label>
                     <Input
                       id="cep"
                       inputMode="numeric"

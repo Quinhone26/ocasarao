@@ -59,30 +59,58 @@ export function notificationsGranted() {
   return notificationsSupported() && Notification.permission === "granted";
 }
 
+/** Registra o worker de notificações (necessário no Android/Chrome mobile). */
+async function getNotifyRegistration(): Promise<ServiceWorkerRegistration | null> {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return null;
+  try {
+    const existing = await navigator.serviceWorker.getRegistration("/notify-sw.js");
+    if (existing) return existing;
+    return await navigator.serviceWorker.register("/notify-sw.js", { scope: "/" });
+  } catch {
+    return null;
+  }
+}
+
 /** Pede permissão de notificação (precisa de gesto do usuário em alguns browsers). */
 export async function requestNotificationPermission(): Promise<boolean> {
   if (!notificationsSupported()) return false;
-  if (Notification.permission === "granted") return true;
   if (Notification.permission === "denied") return false;
+  if (Notification.permission === "granted") {
+    void getNotifyRegistration();
+    return true;
+  }
   try {
-    return (await Notification.requestPermission()) === "granted";
+    const ok = (await Notification.requestPermission()) === "granted";
+    if (ok) await getNotifyRegistration();
+    return ok;
   } catch {
     return false;
   }
 }
 
-/** Notificação do sistema; ignora silenciosamente se não houver permissão. */
-export function systemNotify(title: string, body: string, tag?: string) {
+/** Notificação do sistema; usa service worker no mobile e cai para Notification no desktop. */
+export async function systemNotify(title: string, body: string, tag?: string) {
   if (!notificationsGranted()) return;
+  const options: NotificationOptions = {
+    body,
+    tag,
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    data: { url: "/" },
+  };
+  const reg = await getNotifyRegistration();
+  if (reg) {
+    try {
+      await reg.showNotification(title, { ...options, requireInteraction: true } as NotificationOptions);
+      return;
+    } catch {
+      /* tenta o fallback abaixo */
+    }
+  }
   try {
-    new Notification(title, {
-      body,
-      tag,
-      icon: "/icon-192.png",
-      badge: "/icon-192.png",
-    });
+    new Notification(title, options);
   } catch {
-    /* alguns browsers só permitem via service worker */
+    /* mobile sem service worker: só som/vibração */
   }
 }
 
@@ -90,5 +118,6 @@ export function systemNotify(title: string, body: string, tag?: string) {
 export function alertNewOrder(title: string, body: string, tag?: string) {
   playAlertSound();
   vibrate();
-  systemNotify(title, body, tag);
+  void systemNotify(title, body, tag);
 }
+
