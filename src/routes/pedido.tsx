@@ -169,6 +169,26 @@ function PedidoPage() {
       toast.error("Não consegui enviar seu pedido. Tente novamente.");
       return;
     }
+
+    // Salva/atualiza o cadastro do cliente igual ao pedido manual.
+    if (entrega) {
+      await upsertClienteFromDelivery({
+        cliente: nome.trim(),
+        telefone: telefone.trim(),
+        cep: cep.trim(),
+        endereco: endereco.trim(),
+        numero: numero.trim(),
+        bairro: bairro.trim(),
+        cidade: ALLOWED_CITY,
+        complemento: complemento.trim(),
+      });
+    } else {
+      await upsertClienteFromDelivery({
+        cliente: nome.trim(),
+        telefone: telefone.trim(),
+      });
+    }
+
     setDone({ track: trackCode });
   }
 
