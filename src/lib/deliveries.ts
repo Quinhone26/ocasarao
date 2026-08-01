@@ -163,9 +163,15 @@ function toRow(d: Partial<Delivery>): Partial<DeliveryRow> {
 
 // ---------- Hook ----------
 
-export function useDeliveries() {
+export function useDeliveries(options?: {
+  /** Chamado quando um pedido criado em outro dispositivo/página chega via realtime. */
+  onRemoteInsert?: (d: Delivery) => void;
+}) {
   const [items, setItems] = useState<Delivery[]>(() => readCache());
   const localOpsRef = useRef<Set<string>>(new Set());
+  const onRemoteInsertRef = useRef(options?.onRemoteInsert);
+  onRemoteInsertRef.current = options?.onRemoteInsert;
+
 
   const applyItems = useCallback(
     (updater: (prev: Delivery[]) => Delivery[]) => {
