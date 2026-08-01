@@ -100,15 +100,18 @@ function PedidoPage() {
     const digits = cep.replace(/\D/g, "");
     if (!digits) return;
     setCep(formatCep(digits));
+    setCepAviso(null);
     if (!isValidCep(digits)) {
       setCepErro("CEP inválido — precisa ter 8 dígitos.");
       return;
     }
+    setCepErro(null);
     setCepBusy(true);
     const res = await lookupCep(digits);
     setCepBusy(false);
     if (res.status !== "ok") {
-      setCepErro("Não consegui buscar esse CEP. Preencha o endereço manualmente.");
+      // Falha de rede/serviço não deve bloquear o pedido: é só um aviso.
+      setCepAviso("Não consegui buscar esse CEP. Preencha o endereço manualmente.");
       return;
     }
     if (!isAllowedCity(res.data.localidade, res.data.uf)) {
@@ -130,6 +133,7 @@ function PedidoPage() {
     if (entrega && cepErro) return toast.error(cepErro);
     if (cart.length === 0) return toast.error("Seu carrinho está vazio.");
     if (entrega && !cep.trim()) return toast.error("Informe o CEP da entrega.");
+
     if (total <= 0) return toast.error("Valor do pedido inválido.");
 
     const trackCode = generateTrackCode();
