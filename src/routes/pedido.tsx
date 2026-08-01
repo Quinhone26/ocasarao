@@ -392,6 +392,10 @@ function PedidoPage() {
                 </div>
                 {cepBusy && <p className="text-xs text-muted-foreground">Buscando CEP…</p>}
                 {cepErro && <p className="text-xs text-destructive">{cepErro}</p>}
+                {!cepErro && cepAviso && (
+                  <p className="text-xs text-muted-foreground">{cepAviso}</p>
+                )}
+
                 <div>
                   <Label htmlFor="end">Endereço *</Label>
                   <Input id="end" value={endereco} onChange={(e) => setEndereco(e.target.value)} />
