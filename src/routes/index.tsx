@@ -1,7 +1,7 @@
 import { isUnlocked } from "@/lib/gate.functions";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Search, Bike, BarChart3, ClipboardList, Route as RouteIcon, Users, Phone, MapPin, Pencil, Trash2, Calendar as CalendarIcon, Settings as SettingsIcon } from "lucide-react";
+import { Plus, Search, Bike, BarChart3, ClipboardList, Route as RouteIcon, Users, Phone, MapPin, Pencil, Trash2, Calendar as CalendarIcon, Settings as SettingsIcon, BellOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,10 @@ function Index() {
   const [editingCliente, setEditingCliente] = useState<Cliente | undefined>();
   const [deletingCliente, setDeletingCliente] = useState<Cliente | undefined>();
   const [arrivalPromptId, setArrivalPromptId] = useState<string | undefined>();
+  const [notifOn, setNotifOn] = useState(false);
+  useEffect(() => {
+    setNotifOn(notificationsGranted());
+  }, []);
   const navigatedIdRef = useRef<string | undefined>(undefined);
   const navigatedAtRef = useRef<number>(0);
 
