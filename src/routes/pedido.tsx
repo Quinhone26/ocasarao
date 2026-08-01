@@ -380,7 +380,7 @@ function PedidoPage() {
                       id="cep"
                       inputMode="numeric"
                       value={cep}
-                      onChange={(e) => setCep(formatCep(e.target.value))}
+                      onChange={(e) => { setCep(formatCep(e.target.value)); setCepErro(null); }}
                       onBlur={handleCepBlur}
                       placeholder="87500-000"
                     />
