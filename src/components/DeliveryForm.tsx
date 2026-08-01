@@ -102,6 +102,7 @@ export function DeliveryForm({
   onCancel: () => void;
 }) {
   const [v, setV] = useState<DeliveryFormValues>(empty);
+  const [forma, setForma] = useState<FormaPagamento | "">("");
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState<null | {
     kind: "invalid" | "not_found" | "network" | "out_of_area";
@@ -114,6 +115,7 @@ export function DeliveryForm({
 
   useEffect(() => {
     if (initial) {
+      const { forma: formaInicial, resto } = splitPagamento(initial.observacoes ?? "");
       const next = {
         cliente: initial.cliente,
         telefone: formatPhone(initial.telefone),
@@ -123,7 +125,7 @@ export function DeliveryForm({
         bairro: initial.bairro,
         cidade: initial.cidade,
         complemento: initial.complemento,
-        observacoes: initial.observacoes,
+        observacoes: resto,
         valor: initial.valor,
         dataHora: toLocalInput(initial.dataHora),
         agendadoPara: initial.agendadoPara ? toLocalInput(initial.agendadoPara) : null,
@@ -135,9 +137,11 @@ export function DeliveryForm({
         pago: !!initial.pago,
       };
       addressKeyWithCoords.current = addressKey(next);
+      setForma(formaInicial);
       setV(next);
     } else {
       addressKeyWithCoords.current = "";
+      setForma("");
       setV({ ...empty, dataHora: toLocalInput(new Date().toISOString()) });
     }
   }, [initial]);
