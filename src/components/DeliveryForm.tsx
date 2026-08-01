@@ -41,6 +41,23 @@ export interface DeliveryFormValues {
   pago: boolean;
 }
 
+export const FORMAS_PAGAMENTO = ["Dinheiro", "Cartão", "Pix"] as const;
+export type FormaPagamento = (typeof FORMAS_PAGAMENTO)[number];
+
+/** Separa a linha "Pagamento: X" das observações (formato usado nos pedidos online). */
+function splitPagamento(obs: string): { forma: FormaPagamento | ""; resto: string } {
+  const lines = (obs || "").split("\n");
+  let forma: FormaPagamento | "" = "";
+  const resto: string[] = [];
+  for (const line of lines) {
+    const m = /^\s*pagamento:\s*(.+)$/i.exec(line);
+    const found = m ? FORMAS_PAGAMENTO.find((f) => norm(m[1]).startsWith(norm(f))) : undefined;
+    if (found && !forma) forma = found;
+    else resto.push(line);
+  }
+  return { forma, resto: resto.join("\n").trim() };
+}
+
 function addressKey(v: Pick<DeliveryFormValues, "cep" | "endereco" | "numero" | "bairro" | "cidade">): string {
   return [normalizeCep(v.cep), norm(v.endereco), norm(v.numero), norm(v.bairro), norm(v.cidade)]
     .filter(Boolean)
