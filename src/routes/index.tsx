@@ -20,6 +20,8 @@ import { InstallPrompt } from "@/components/InstallPrompt";
 import { printComanda } from "@/lib/print-comanda";
 import { useCompanySettings, DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/company-settings";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
+import { describeError } from "@/lib/errors";
+import { alertNewOrder, requestNotificationPermission, notificationsSupported, notificationsGranted, playAlertSound } from "@/lib/notify";
 
 import { useServerFn } from "@tanstack/react-start";
 import { geocodeAddress as geocodeAddressServerFn } from "@/lib/routes.functions";
@@ -51,7 +53,16 @@ export const Route = createFileRoute("/")({
 type Filter = "todas" | DeliveryStatus;
 
 function Index() {
-  const { items, create, update, remove } = useDeliveries();
+  const { items, create, update, remove } = useDeliveries({
+    // Pedido criado em outro lugar (site /pedido ou outro dispositivo).
+    onRemoteInsert: (d) => {
+      const online = /PEDIDO ONLINE/i.test(d.observacoes ?? "");
+      const titulo = online ? "Novo pedido online! 🛎️" : "Nova entrega cadastrada";
+      const corpo = `${d.cliente} · ${formatBRL(d.valor)}`;
+      alertNewOrder(titulo, corpo, `pedido-${d.id}`);
+      toast.success(titulo, { description: corpo, duration: 12000 });
+    },
+  });
   useDriverBroadcast(items);
   const clientes = useClientes(items);
   const [search, setSearch] = useState("");
@@ -212,6 +223,7 @@ function Index() {
         });
       } else {
         const created = await create(v);
+        playAlertSound();
         toast.success("Entrega cadastrada", {
           duration: 8000,
           action: {
@@ -226,7 +238,7 @@ function Index() {
     } catch (err) {
       console.error(err);
       toast.error(editing ? "Erro ao atualizar entrega" : "Erro ao cadastrar entrega", {
-        description: err instanceof Error ? err.message : undefined,
+        description: describeError(err),
       });
     }
   };
@@ -236,8 +248,8 @@ function Index() {
     if (d.status === "pendente") {
       try {
         await update(d.id, { status: "em_rota" });
-      } catch {
-        /* update falhou — status permanece; realtime irá alinhar */
+      } catch (err) {
+        toast.error("Erro ao marcar como em rota", { description: describeError(err) });
       }
     }
     navigatedIdRef.current = d.id;
@@ -347,8 +359,8 @@ function Index() {
     try {
       await update(target.id, { status: "entregue" });
       toast.success(`${target.cliente} · marcada como entregue`);
-    } catch {
-      toast.error("Erro ao marcar como entregue");
+    } catch (err) {
+      toast.error("Erro ao marcar como entregue", { description: describeError(err) });
     }
   };
 
@@ -384,8 +396,8 @@ function Index() {
     try {
       await update(d.id, { status: "entregue" });
       toast.success(`${d.cliente} · marcada como entregue`);
-    } catch {
-      toast.error("Erro ao marcar como entregue");
+    } catch (err) {
+      toast.error("Erro ao marcar como entregue", { description: describeError(err) });
     }
   };
 
@@ -396,8 +408,8 @@ function Index() {
     try {
       await remove(target.id);
       toast.success("Entrega removida");
-    } catch {
-      toast.error("Erro ao remover entrega");
+    } catch (err) {
+      toast.error("Erro ao remover entrega", { description: describeError(err) });
     }
   };
 
@@ -415,8 +427,8 @@ function Index() {
         ? "removido do cadastro"
         : `${ids.length} ${ids.length === 1 ? "entrega removida" : "entregas removidas"}`;
       toast.success(`${target.cliente} · ${suf}`);
-    } catch {
-      toast.error("Erro ao excluir cliente");
+    } catch (err) {
+      toast.error("Erro ao excluir cliente", { description: describeError(err) });
     }
   };
 
@@ -441,9 +453,7 @@ function Index() {
       toast.success("Cliente atualizado");
       setEditingCliente(undefined);
     } catch (err) {
-      toast.error("Erro ao salvar cliente", {
-        description: err instanceof Error ? err.message : undefined,
-      });
+      toast.error("Erro ao salvar cliente", { description: describeError(err) });
     }
   };
 
@@ -592,8 +602,8 @@ function Index() {
                         try {
                           await update(d.id, { pago: !d.pago });
                           toast.success(!d.pago ? "Marcada como paga" : "Marcada como não paga");
-                        } catch {
-                          toast.error("Erro ao atualizar pagamento");
+                        } catch (err) {
+                          toast.error("Erro ao atualizar pagamento", { description: describeError(err) });
                         }
                       }}
                     />
