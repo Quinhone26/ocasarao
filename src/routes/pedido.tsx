@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useProdutos, cartTotal, cartToText, type CartItem, type Produto } from "@/lib/produtos";
 import { formatBRL } from "@/lib/deliveries";
+import { upsertClienteFromDelivery } from "@/lib/clientes";
 import { formatCep, isValidCep, lookupCep, isAllowedCity, ALLOWED_CITY, ALLOWED_UF } from "@/lib/cep";
 import { formatPhone, normalizeBrPhone } from "@/lib/masks";
 import { generateTrackCode, buildTrackUrl } from "@/lib/tracking";
@@ -168,6 +169,26 @@ function PedidoPage() {
       toast.error("Não consegui enviar seu pedido. Tente novamente.");
       return;
     }
+
+    // Salva/atualiza o cadastro do cliente igual ao pedido manual.
+    if (entrega) {
+      await upsertClienteFromDelivery({
+        cliente: nome.trim(),
+        telefone: telefone.trim(),
+        cep: cep.trim(),
+        endereco: endereco.trim(),
+        numero: numero.trim(),
+        bairro: bairro.trim(),
+        cidade: ALLOWED_CITY,
+        complemento: complemento.trim(),
+      });
+    } else {
+      await upsertClienteFromDelivery({
+        cliente: nome.trim(),
+        telefone: telefone.trim(),
+      });
+    }
+
     setDone({ track: trackCode });
   }
 
