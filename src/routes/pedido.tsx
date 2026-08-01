@@ -440,9 +440,6 @@ function PedidoPage() {
                 />
               </div>
             )}
-            {pagamento === "Pix" && total > 0 && (
-              <PixQrCode amount={total} merchantName={company.nome} customerName={nome.trim()} />
-            )}
             <div>
               <Label htmlFor="obs">Observações</Label>
               <Textarea id="obs" value={obs} onChange={(e) => setObs(e.target.value)} rows={3} />
