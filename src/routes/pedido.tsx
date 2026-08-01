@@ -377,7 +377,7 @@ function PedidoPage() {
               <>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="cep">CEP</Label>
+                    <Label htmlFor="cep">CEP *</Label>
                     <Input
                       id="cep"
                       inputMode="numeric"
