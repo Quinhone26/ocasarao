@@ -496,6 +496,23 @@ function Index() {
               <h1 className="text-lg font-bold leading-tight truncate">{company.nome || "O Casarão"}</h1>
               <p className="text-xs text-primary-foreground/70">Gestão de entregas</p>
             </div>
+            {notificationsSupported() && !notifOn && (
+              <button
+                type="button"
+                onClick={async () => {
+                  const ok = await requestNotificationPermission();
+                  setNotifOn(ok);
+                  playAlertSound();
+                  if (ok) toast.success("Alertas de pedido novo ativados");
+                  else toast.error("Notificações bloqueadas no navegador");
+                }}
+                className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-primary-foreground/10 hover:bg-primary-foreground/20"
+                aria-label="Ativar alertas de pedido novo"
+                title="Ativar alertas de pedido novo"
+              >
+                <BellOff className="w-5 h-5" />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setSettingsOpen(true)}
@@ -504,6 +521,7 @@ function Index() {
             >
               <SettingsIcon className="w-5 h-5" />
             </button>
+
             <Link
               to="/cardapio"
               className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-primary-foreground/10 hover:bg-primary-foreground/20"
