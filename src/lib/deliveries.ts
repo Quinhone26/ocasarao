@@ -163,9 +163,16 @@ function toRow(d: Partial<Delivery>): Partial<DeliveryRow> {
 
 // ---------- Hook ----------
 
-export function useDeliveries() {
+export function useDeliveries(options?: {
+  /** Chamado quando um pedido criado em outro dispositivo/página chega via realtime. */
+  onRemoteInsert?: (d: Delivery) => void;
+}) {
   const [items, setItems] = useState<Delivery[]>(() => readCache());
   const localOpsRef = useRef<Set<string>>(new Set());
+  const seenIdsRef = useRef<Set<string>>(new Set());
+  const onRemoteInsertRef = useRef(options?.onRemoteInsert);
+  onRemoteInsertRef.current = options?.onRemoteInsert;
+
 
   const applyItems = useCallback(
     (updater: (prev: Delivery[]) => Delivery[]) => {
@@ -188,6 +195,7 @@ export function useDeliveries() {
       return;
     }
     const list = (data as DeliveryRow[]).map(fromRow);
+    for (const d of list) seenIdsRef.current.add(d.id);
     applyItems(() => list);
 
     // Backfill de track_code em entregas antigas — permite gerar link de
@@ -235,10 +243,14 @@ export function useDeliveries() {
           }
           if (eventType === "INSERT" && payload.new) {
             const d = fromRow(payload.new as DeliveryRow);
+            const isNew = !seenIdsRef.current.has(d.id);
+            seenIdsRef.current.add(d.id);
             applyItems((prev) =>
               prev.some((x) => x.id === d.id) ? prev : [d, ...prev],
             );
+            if (isNew) onRemoteInsertRef.current?.(d);
           } else if (eventType === "UPDATE" && payload.new) {
+
             const d = fromRow(payload.new as DeliveryRow);
             applyItems((prev) =>
               prev.map((x) => (x.id === d.id ? d : x)),
@@ -265,6 +277,7 @@ export function useDeliveries() {
         trackCode: generateTrackCode(),
       };
       localOpsRef.current.add(d.id);
+      seenIdsRef.current.add(d.id);
       applyItems((prev) => [d, ...prev]);
       const { error } = await supabase.from("deliveries").insert(toRow(d));
       if (error) {

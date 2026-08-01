@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { describeError } from "@/lib/errors";
 import { supabase } from "@/integrations/supabase/client";
 import { useProdutos, cartTotal, cartToText, type CartItem, type Produto } from "@/lib/produtos";
 import { formatBRL } from "@/lib/deliveries";
@@ -128,6 +129,8 @@ function PedidoPage() {
     if (entrega && !endereco.trim()) return toast.error("Informe o endereço da entrega.");
     if (entrega && cepErro) return toast.error(cepErro);
     if (cart.length === 0) return toast.error("Seu carrinho está vazio.");
+    if (entrega && !cep.trim()) return toast.error("Informe o CEP da entrega.");
+    if (total <= 0) return toast.error("Valor do pedido inválido.");
 
     const trackCode = generateTrackCode();
     const detalhes = [
@@ -166,7 +169,9 @@ function PedidoPage() {
 
     if (insertError) {
       console.error("[pedido] insert", insertError);
-      toast.error("Não consegui enviar seu pedido. Tente novamente.");
+      toast.error("Não consegui enviar seu pedido. Tente novamente.", {
+        description: describeError(insertError),
+      });
       return;
     }
 
