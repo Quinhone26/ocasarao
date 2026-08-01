@@ -64,6 +64,8 @@ function PedidoPage() {
   const [obs, setObs] = useState("");
   const [cepBusy, setCepBusy] = useState(false);
   const [cepErro, setCepErro] = useState<string | null>(null);
+  const [cepAviso, setCepAviso] = useState<string | null>(null);
+
 
   const subtotal = useMemo(() => cartTotal(cart), [cart]);
   const taxaEntrega = tipoEntrega === "entrega" ? TAXA_ENTREGA : 0;
