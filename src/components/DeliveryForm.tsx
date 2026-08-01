@@ -41,6 +41,23 @@ export interface DeliveryFormValues {
   pago: boolean;
 }
 
+export const FORMAS_PAGAMENTO = ["Dinheiro", "Cartão", "Pix"] as const;
+export type FormaPagamento = (typeof FORMAS_PAGAMENTO)[number];
+
+/** Separa a linha "Pagamento: X" das observações (formato usado nos pedidos online). */
+function splitPagamento(obs: string): { forma: FormaPagamento | ""; resto: string } {
+  const lines = (obs || "").split("\n");
+  let forma: FormaPagamento | "" = "";
+  const resto: string[] = [];
+  for (const line of lines) {
+    const m = /^\s*pagamento:\s*(.+)$/i.exec(line);
+    const found = m ? FORMAS_PAGAMENTO.find((f) => norm(m[1]).startsWith(norm(f))) : undefined;
+    if (found && !forma) forma = found;
+    else resto.push(line);
+  }
+  return { forma, resto: resto.join("\n").trim() };
+}
+
 function addressKey(v: Pick<DeliveryFormValues, "cep" | "endereco" | "numero" | "bairro" | "cidade">): string {
   return [normalizeCep(v.cep), norm(v.endereco), norm(v.numero), norm(v.bairro), norm(v.cidade)]
     .filter(Boolean)
@@ -85,6 +102,7 @@ export function DeliveryForm({
   onCancel: () => void;
 }) {
   const [v, setV] = useState<DeliveryFormValues>(empty);
+  const [forma, setForma] = useState<FormaPagamento | "">("");
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState<null | {
     kind: "invalid" | "not_found" | "network" | "out_of_area";
@@ -97,6 +115,7 @@ export function DeliveryForm({
 
   useEffect(() => {
     if (initial) {
+      const { forma: formaInicial, resto } = splitPagamento(initial.observacoes ?? "");
       const next = {
         cliente: initial.cliente,
         telefone: formatPhone(initial.telefone),
@@ -106,7 +125,7 @@ export function DeliveryForm({
         bairro: initial.bairro,
         cidade: initial.cidade,
         complemento: initial.complemento,
-        observacoes: initial.observacoes,
+        observacoes: resto,
         valor: initial.valor,
         dataHora: toLocalInput(initial.dataHora),
         agendadoPara: initial.agendadoPara ? toLocalInput(initial.agendadoPara) : null,
@@ -118,9 +137,11 @@ export function DeliveryForm({
         pago: !!initial.pago,
       };
       addressKeyWithCoords.current = addressKey(next);
+      setForma(formaInicial);
       setV(next);
     } else {
       addressKeyWithCoords.current = "";
+      setForma("");
       setV({ ...empty, dataHora: toLocalInput(new Date().toISOString()) });
     }
   }, [initial]);
@@ -313,10 +334,14 @@ export function DeliveryForm({
       });
       return;
     }
+    const obs = [forma ? `Pagamento: ${forma}` : "", v.observacoes.trim()]
+      .filter(Boolean)
+      .join("\n");
     onSubmit({
       ...v,
       cep: cepDigits ? formatCep(cepDigits) : "",
       valor: Number(v.valor) || 0,
+      observacoes: obs,
       dataHora: new Date(v.dataHora).toISOString(),
       agendadoPara: v.agendadoPara ? new Date(v.agendadoPara).toISOString() : null,
       lat: v.lat ?? null,
@@ -399,6 +424,21 @@ export function DeliveryForm({
             inputMode="numeric"
             placeholder="R$ 0,00"
           />
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label>Forma de pagamento</Label>
+        <div className="grid grid-cols-3 gap-2">
+          {FORMAS_PAGAMENTO.map((f) => (
+            <Button
+              key={f}
+              type="button"
+              variant={forma === f ? "default" : "outline"}
+              onClick={() => setForma((prev) => (prev === f ? "" : f))}
+            >
+              {f}
+            </Button>
+          ))}
         </div>
       </div>
       <label
