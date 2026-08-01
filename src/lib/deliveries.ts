@@ -241,10 +241,15 @@ export function useDeliveries(options?: {
           }
           if (eventType === "INSERT" && payload.new) {
             const d = fromRow(payload.new as DeliveryRow);
-            applyItems((prev) =>
-              prev.some((x) => x.id === d.id) ? prev : [d, ...prev],
-            );
+            let isNew = false;
+            applyItems((prev) => {
+              if (prev.some((x) => x.id === d.id)) return prev;
+              isNew = true;
+              return [d, ...prev];
+            });
+            if (isNew) onRemoteInsertRef.current?.(d);
           } else if (eventType === "UPDATE" && payload.new) {
+
             const d = fromRow(payload.new as DeliveryRow);
             applyItems((prev) =>
               prev.map((x) => (x.id === d.id ? d : x)),
