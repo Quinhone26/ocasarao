@@ -78,8 +78,8 @@ export function systemNotify(title: string, body: string, tag?: string) {
     new Notification(title, {
       body,
       tag,
-      icon: "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
     });
   } catch {
     /* alguns browsers só permitem via service worker */
