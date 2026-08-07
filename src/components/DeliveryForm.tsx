@@ -44,18 +44,27 @@ export interface DeliveryFormValues {
 export const FORMAS_PAGAMENTO = ["Dinheiro", "Cartão", "Pix"] as const;
 export type FormaPagamento = (typeof FORMAS_PAGAMENTO)[number];
 
-/** Separa a linha "Pagamento: X" das observações (formato usado nos pedidos online). */
-function splitPagamento(obs: string): { forma: FormaPagamento | ""; resto: string } {
+export const TIPOS_ENTREGA = ["Entrega", "Retirada"] as const;
+export type TipoEntrega = (typeof TIPOS_ENTREGA)[number];
+
+/** Separa a linha "Pagamento: X" e "Tipo: X" das observações. */
+function splitObservacoes(obs: string): { forma: FormaPagamento | ""; tipo: TipoEntrega | ""; resto: string } {
   const lines = (obs || "").split("\n");
   let forma: FormaPagamento | "" = "";
+  let tipo: TipoEntrega | "" = "";
   const resto: string[] = [];
   for (const line of lines) {
-    const m = /^\s*pagamento:\s*(.+)$/i.exec(line);
-    const found = m ? FORMAS_PAGAMENTO.find((f) => norm(m[1]).startsWith(norm(f))) : undefined;
-    if (found && !forma) forma = found;
+    const mPag = /^\s*pagamento:\s*(.+)$/i.exec(line);
+    const mTipo = /^\s*tipo:\s*(.+)$/i.exec(line);
+    
+    const foundPag = mPag ? FORMAS_PAGAMENTO.find((f) => norm(mPag[1]).startsWith(norm(f))) : undefined;
+    const foundTipo = mTipo ? TIPOS_ENTREGA.find((t) => norm(mTipo[1]).startsWith(norm(t))) : undefined;
+
+    if (foundPag && !forma) forma = foundPag;
+    else if (foundTipo && !tipo) tipo = foundTipo;
     else resto.push(line);
   }
-  return { forma, resto: resto.join("\n").trim() };
+  return { forma, tipo, resto: resto.join("\n").trim() };
 }
 
 function addressKey(v: Pick<DeliveryFormValues, "cep" | "endereco" | "numero" | "bairro" | "cidade">): string {
@@ -103,6 +112,7 @@ export function DeliveryForm({
 }) {
   const [v, setV] = useState<DeliveryFormValues>(empty);
   const [forma, setForma] = useState<FormaPagamento | "">("");
+  const [tipo, setTipo] = useState<TipoEntrega>("Entrega");
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState<null | {
     kind: "invalid" | "not_found" | "network" | "out_of_area";
@@ -115,7 +125,7 @@ export function DeliveryForm({
 
   useEffect(() => {
     if (initial) {
-      const { forma: formaInicial, resto } = splitPagamento(initial.observacoes ?? "");
+      const { forma: formaInicial, tipo: tipoInicial, resto } = splitObservacoes(initial.observacoes ?? "");
       const next = {
         cliente: initial.cliente,
         telefone: formatPhone(initial.telefone),
@@ -138,10 +148,12 @@ export function DeliveryForm({
       };
       addressKeyWithCoords.current = addressKey(next);
       setForma(formaInicial);
+      setTipo(tipoInicial || "Entrega");
       setV(next);
     } else {
       addressKeyWithCoords.current = "";
       setForma("");
+      setTipo("Entrega");
       setV({ ...empty, dataHora: toLocalInput(new Date().toISOString()) });
     }
   }, [initial]);
@@ -302,50 +314,59 @@ export function DeliveryForm({
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!v.cliente.trim() || !v.endereco.trim()) return;
+    const isEntrega = tipo === "Entrega";
+    if (!v.cliente.trim() || (isEntrega && !v.endereco.trim())) return;
 
     const hasGps = v.lat != null && v.lng != null;
     const cepDigits = normalizeCep(v.cep);
-    // CEP é obrigatório para geocoding preciso; só liberamos se já houver GPS salvo.
-    if (!hasGps && cepDigits.length === 0) {
-      toast.error("Informe o CEP ou capture a localização (GPS)");
-      setCepError({
-        kind: "invalid",
-        message: "CEP obrigatório — ou salve a localização (GPS) do destino.",
-      });
-      return;
+    if (isEntrega) {
+      if (!hasGps && cepDigits.length === 0) {
+        toast.error("Informe o CEP ou capture a localização (GPS)");
+        setCepError({
+          kind: "invalid",
+          message: "CEP obrigatório — ou salve a localização (GPS) do destino.",
+        });
+        return;
+      }
+      if (cepDigits.length > 0 && !isValidCep(cepDigits)) {
+        toast.error("CEP inválido");
+        setCepError({
+          kind: "invalid",
+          message:
+            cepDigits.length < 8
+              ? "CEP incompleto — precisa ter 8 dígitos."
+              : "CEP inválido — verifique os números digitados.",
+        });
+        return;
+      }
+      if (v.cidade.trim() && !isAllowedCity(v.cidade)) {
+        toast.error(`Só atendemos ${ALLOWED_CITY}-${ALLOWED_UF}`);
+        setCepError({
+          kind: "out_of_area",
+          message: `Fora da área de atendimento. Só entregamos em ${ALLOWED_CITY}-${ALLOWED_UF}.`,
+        });
+        return;
+      }
     }
-    if (cepDigits.length > 0 && !isValidCep(cepDigits)) {
-      toast.error("CEP inválido");
-      setCepError({
-        kind: "invalid",
-        message:
-          cepDigits.length < 8
-            ? "CEP incompleto — precisa ter 8 dígitos."
-            : "CEP inválido — verifique os números digitados.",
-      });
-      return;
-    }
-    if (v.cidade.trim() && !isAllowedCity(v.cidade)) {
-      toast.error(`Só atendemos ${ALLOWED_CITY}-${ALLOWED_UF}`);
-      setCepError({
-        kind: "out_of_area",
-        message: `Fora da área de atendimento. Só entregamos em ${ALLOWED_CITY}-${ALLOWED_UF}.`,
-      });
-      return;
-    }
-    const obs = [forma ? `Pagamento: ${forma}` : "", v.observacoes.trim()]
-      .filter(Boolean)
-      .join("\n");
+    const obsParts = [];
+    if (forma) obsParts.push(`Pagamento: ${forma}`);
+    if (tipo) obsParts.push(`Tipo: ${tipo}`);
+    if (v.observacoes.trim()) obsParts.push(v.observacoes.trim());
+    
+    const obs = obsParts.join("\n");
     onSubmit({
       ...v,
-      cep: cepDigits ? formatCep(cepDigits) : "",
+      cep: isEntrega ? (cepDigits ? formatCep(cepDigits) : "") : "",
+      endereco: isEntrega ? v.endereco : "RETIRADA NO LOCAL",
+      numero: isEntrega ? v.numero : "",
+      bairro: isEntrega ? v.bairro : "",
+      complemento: isEntrega ? v.complemento : "",
       valor: Number(v.valor) || 0,
       observacoes: obs,
       dataHora: new Date(v.dataHora).toISOString(),
       agendadoPara: v.agendadoPara ? new Date(v.agendadoPara).toISOString() : null,
-      lat: v.lat ?? null,
-      lng: v.lng ?? null,
+      lat: isEntrega ? (v.lat ?? null) : null,
+      lng: isEntrega ? (v.lng ?? null) : null,
       status: v.status || "pendente",
     });
   };
@@ -415,7 +436,22 @@ export function DeliveryForm({
             )}
           </div>
         </div>
-        <div className="space-y-1.5">
+      <div className="space-y-1.5">
+        <Label>Tipo de pedido</Label>
+        <div className="grid grid-cols-2 gap-2">
+          {TIPOS_ENTREGA.map((t) => (
+            <Button
+              key={t}
+              type="button"
+              variant={tipo === t ? "default" : "outline"}
+              onClick={() => setTipo(t)}
+            >
+              {t}
+            </Button>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-1.5">
           <Label htmlFor="valor">Valor</Label>
           <Input
             id="valor"
@@ -459,184 +495,188 @@ export function DeliveryForm({
           onChange={(e) => set("pago", e.target.checked)}
         />
       </label>
-      {(() => {
-        const digits = normalizeCep(v.cep);
-        const missing = digits.length > 0 && digits.length < 8;
-        const complete = digits.length === 8 && isValidCep(digits);
-        const invalidNow = !!cepError || missing;
-        return (
+      {tipo === "Entrega" && (
+        <>
+          {(() => {
+            const digits = normalizeCep(v.cep);
+            const missing = digits.length > 0 && digits.length < 8;
+            const complete = digits.length === 8 && isValidCep(digits);
+            const invalidNow = !!cepError || missing;
+            return (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="cep">CEP *</Label>
+                  {missing && !cepError && (
+                    <span className="text-xs text-muted-foreground">
+                      faltam {8 - digits.length} dígito(s)
+                    </span>
+                  )}
+                  {complete && !cepError && !cepLoading && (
+                    <span className="text-xs text-status-delivered">CEP válido</span>
+                  )}
+                </div>
+                <div className="relative">
+                  <Input
+                    id="cep"
+                    value={v.cep}
+                    onChange={(e) => handleCepChange(e.target.value)}
+                    onBlur={cepBlur}
+                    inputMode="numeric"
+                    placeholder="00000-000"
+                    maxLength={9}
+                    aria-invalid={invalidNow}
+                    aria-describedby={cepError ? "cep-error" : undefined}
+                    className={
+                      invalidNow
+                        ? "border-destructive text-destructive focus-visible:ring-destructive pr-9"
+                        : complete
+                          ? "border-status-delivered/60 focus-visible:ring-status-delivered pr-9"
+                          : "pr-9"
+                    }
+                  />
+                  {cepLoading && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                  )}
+                </div>
+                {cepError && (
+                  <div
+                    id="cep-error"
+                    role="alert"
+                    className="flex items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                  >
+                    <span className="min-w-0">{cepError.message}</span>
+                    {cepError.kind === "network" && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 shrink-0 text-destructive hover:bg-destructive/20 hover:text-destructive"
+                        onClick={retryCep}
+                        disabled={cepLoading}
+                      >
+                        Tentar novamente
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="cep">CEP *</Label>
-              {missing && !cepError && (
-                <span className="text-xs text-muted-foreground">
-                  faltam {8 - digits.length} dígito(s)
-                </span>
-              )}
-              {complete && !cepError && !cepLoading && (
-                <span className="text-xs text-status-delivered">CEP válido</span>
-              )}
+            <Label htmlFor="endereco">Endereço *</Label>
+            <Input id="endereco" value={v.endereco} onChange={(e) => setAddressFields({ endereco: e.target.value })} required maxLength={200} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="numero">Número</Label>
+              <Input id="numero" value={v.numero} onChange={(e) => setAddressFields({ numero: e.target.value })} maxLength={20} />
             </div>
-            <div className="relative">
-              <Input
-                id="cep"
-                value={v.cep}
-                onChange={(e) => handleCepChange(e.target.value)}
-                onBlur={cepBlur}
-                inputMode="numeric"
-                placeholder="00000-000"
-                maxLength={9}
-                aria-invalid={invalidNow}
-                aria-describedby={cepError ? "cep-error" : undefined}
-                className={
-                  invalidNow
-                    ? "border-destructive text-destructive focus-visible:ring-destructive pr-9"
-                    : complete
-                      ? "border-status-delivered/60 focus-visible:ring-status-delivered pr-9"
-                      : "pr-9"
-                }
-              />
-              {cepLoading && (
-                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
-              )}
+            <div className="space-y-1.5">
+              <Label htmlFor="bairro">Bairro</Label>
+              <Input id="bairro" value={v.bairro} onChange={(e) => setAddressFields({ bairro: e.target.value })} maxLength={100} />
             </div>
-            {cepError && (
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="cidade">Cidade</Label>
+              <Input id="cidade" value={v.cidade} onChange={(e) => setAddressFields({ cidade: e.target.value })} maxLength={100} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="complemento">Complemento</Label>
+              <Input id="complemento" value={v.complemento} onChange={(e) => set("complemento", e.target.value)} maxLength={100} />
+            </div>
+          </div>
+          {(() => {
+            if (!cepData) return null;
+            const cepCidade = `${cepData.localidade}${cepData.uf ? "/" + cepData.uf : ""}`;
+            const diffs: { label: string; user: string; cep: string; key: "endereco" | "bairro" | "cidade" }[] = [];
+            if (cepData.logradouro && v.endereco.trim() && norm(v.endereco) !== norm(cepData.logradouro)) {
+              diffs.push({ label: "Rua", user: v.endereco, cep: cepData.logradouro, key: "endereco" });
+            }
+            if (cepData.bairro && v.bairro.trim() && norm(v.bairro) !== norm(cepData.bairro)) {
+              diffs.push({ label: "Bairro", user: v.bairro, cep: cepData.bairro, key: "bairro" });
+            }
+            if (cepData.localidade && v.cidade.trim() && norm(v.cidade).split("/")[0] !== norm(cepData.localidade)) {
+              diffs.push({ label: "Cidade", user: v.cidade, cep: cepCidade, key: "cidade" });
+            }
+            if (diffs.length === 0) return null;
+            const applyCep = () => {
+              setAddressFields({
+                endereco: cepData.logradouro || v.endereco,
+                bairro: cepData.bairro || v.bairro,
+                cidade: cepCidade || v.cidade,
+              });
+              toast.success("Endereço substituído pelos dados do CEP");
+            };
+            return (
               <div
-                id="cep-error"
                 role="alert"
-                className="flex items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                className="space-y-2 rounded-lg border border-primary/40 bg-primary/10 p-3 text-sm"
               >
-                <span className="min-w-0">{cepError.message}</span>
-                {cepError.kind === "network" && (
+                <p className="font-medium text-primary">
+                  O endereço digitado é diferente do que os Correios retornam para este CEP.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Ruas podem ter mudado de nome. Usar o endereço do CEP evita erros no mapa e no cálculo da rota.
+                </p>
+                <ul className="space-y-1 text-xs">
+                  {diffs.map((d) => (
+                    <li key={d.key} className="flex flex-wrap gap-x-2">
+                      <span className="font-medium">{d.label}:</span>
+                      <span className="text-muted-foreground line-through">{d.user}</span>
+                      <span aria-hidden>→</span>
+                      <span className="font-medium">{d.cep}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex gap-2 pt-1">
+                  <Button type="button" size="sm" variant="default" onClick={applyCep}>
+                    Usar endereço do CEP
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setCepData(null)}>
+                    Manter o que digitei
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
+          <div className="space-y-2 rounded-lg border border-border p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium">Localização do destino (GPS)</p>
+                <p className="text-xs text-muted-foreground">
+                  {v.lat != null && v.lng != null
+                    ? `Salvo: ${v.lat.toFixed(5)}, ${v.lng.toFixed(5)}`
+                    : "Opcional. Se salvo, o app confirma a entrega quando você chegar (~50 m)."}
+                </p>
+              </div>
+              <div className="flex shrink-0 gap-1">
+                {v.lat != null && (
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="h-7 shrink-0 text-destructive hover:bg-destructive/20 hover:text-destructive"
-                    onClick={retryCep}
-                    disabled={cepLoading}
+                    onClick={() => setV((p) => ({ ...p, lat: null, lng: null }))}
                   >
-                    Tentar novamente
+                    Limpar
                   </Button>
                 )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={captureLocation}
+                  disabled={geoBusy}
+                  className="gap-1.5"
+                >
+                  {geoBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+                  Usar minha localização
+                </Button>
               </div>
-            )}
-          </div>
-        );
-      })()}
-      <div className="space-y-1.5">
-        <Label htmlFor="endereco">Endereço *</Label>
-        <Input id="endereco" value={v.endereco} onChange={(e) => setAddressFields({ endereco: e.target.value })} required maxLength={200} />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="numero">Número</Label>
-          <Input id="numero" value={v.numero} onChange={(e) => setAddressFields({ numero: e.target.value })} maxLength={20} />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="bairro">Bairro</Label>
-          <Input id="bairro" value={v.bairro} onChange={(e) => setAddressFields({ bairro: e.target.value })} maxLength={100} />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="cidade">Cidade</Label>
-          <Input id="cidade" value={v.cidade} onChange={(e) => setAddressFields({ cidade: e.target.value })} maxLength={100} />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="complemento">Complemento</Label>
-          <Input id="complemento" value={v.complemento} onChange={(e) => set("complemento", e.target.value)} maxLength={100} />
-        </div>
-      </div>
-      {(() => {
-        if (!cepData) return null;
-        const cepCidade = `${cepData.localidade}${cepData.uf ? "/" + cepData.uf : ""}`;
-        const diffs: { label: string; user: string; cep: string; key: "endereco" | "bairro" | "cidade" }[] = [];
-        if (cepData.logradouro && v.endereco.trim() && norm(v.endereco) !== norm(cepData.logradouro)) {
-          diffs.push({ label: "Rua", user: v.endereco, cep: cepData.logradouro, key: "endereco" });
-        }
-        if (cepData.bairro && v.bairro.trim() && norm(v.bairro) !== norm(cepData.bairro)) {
-          diffs.push({ label: "Bairro", user: v.bairro, cep: cepData.bairro, key: "bairro" });
-        }
-        if (cepData.localidade && v.cidade.trim() && norm(v.cidade).split("/")[0] !== norm(cepData.localidade)) {
-          diffs.push({ label: "Cidade", user: v.cidade, cep: cepCidade, key: "cidade" });
-        }
-        if (diffs.length === 0) return null;
-        const applyCep = () => {
-          setAddressFields({
-            endereco: cepData.logradouro || v.endereco,
-            bairro: cepData.bairro || v.bairro,
-            cidade: cepCidade || v.cidade,
-          });
-          toast.success("Endereço substituído pelos dados do CEP");
-        };
-        return (
-          <div
-            role="alert"
-            className="space-y-2 rounded-lg border border-primary/40 bg-primary/10 p-3 text-sm"
-          >
-            <p className="font-medium text-primary">
-              O endereço digitado é diferente do que os Correios retornam para este CEP.
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Ruas podem ter mudado de nome. Usar o endereço do CEP evita erros no mapa e no cálculo da rota.
-            </p>
-            <ul className="space-y-1 text-xs">
-              {diffs.map((d) => (
-                <li key={d.key} className="flex flex-wrap gap-x-2">
-                  <span className="font-medium">{d.label}:</span>
-                  <span className="text-muted-foreground line-through">{d.user}</span>
-                  <span aria-hidden>→</span>
-                  <span className="font-medium">{d.cep}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="flex gap-2 pt-1">
-              <Button type="button" size="sm" variant="default" onClick={applyCep}>
-                Usar endereço do CEP
-              </Button>
-              <Button type="button" size="sm" variant="ghost" onClick={() => setCepData(null)}>
-                Manter o que digitei
-              </Button>
             </div>
           </div>
-        );
-      })()}
-      <div className="space-y-2 rounded-lg border border-border p-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-sm font-medium">Localização do destino (GPS)</p>
-            <p className="text-xs text-muted-foreground">
-              {v.lat != null && v.lng != null
-                ? `Salvo: ${v.lat.toFixed(5)}, ${v.lng.toFixed(5)}`
-                : "Opcional. Se salvo, o app confirma a entrega quando você chegar (~50 m)."}
-            </p>
-          </div>
-          <div className="flex shrink-0 gap-1">
-            {v.lat != null && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setV((p) => ({ ...p, lat: null, lng: null }))}
-              >
-                Limpar
-              </Button>
-            )}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={captureLocation}
-              disabled={geoBusy}
-              className="gap-1.5"
-            >
-              {geoBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
-              Usar minha localização
-            </Button>
-          </div>
-        </div>
-      </div>
+        </>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="dataHora">Data e hora</Label>
@@ -652,6 +692,7 @@ export function DeliveryForm({
               ))}
             </SelectContent>
           </Select>
+        </div>
       </div>
       <div className="space-y-2 rounded-lg border border-border p-3">
         <div className="flex items-center justify-between gap-3">
@@ -688,7 +729,6 @@ export function DeliveryForm({
           </div>
         )}
       </div>
-      </div>
       <div className="space-y-1.5">
         <Label htmlFor="observacoes">Observações</Label>
         <Textarea id="observacoes" value={v.observacoes} onChange={(e) => set("observacoes", e.target.value)} rows={2} maxLength={500} />
@@ -696,7 +736,8 @@ export function DeliveryForm({
       {(() => {
         const digits = normalizeCep(v.cep);
         const hasGps = v.lat != null && v.lng != null;
-        const cepOk = digits.length === 0 ? hasGps : isValidCep(digits);
+        const isEntrega = tipo === "Entrega";
+        const cepOk = !isEntrega || (digits.length === 0 ? hasGps : isValidCep(digits));
         const blocked = !cepOk || !!cepError;
         return (
           <div className="flex gap-2 pt-2">
