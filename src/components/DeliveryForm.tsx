@@ -560,7 +560,9 @@ export function DeliveryForm({
           </div>
         );
       })()}
-      <div className="space-y-1.5">
+      {tipo === "Entrega" && (
+        <>
+          <div className="space-y-1.5">
         <Label htmlFor="endereco">Endereço *</Label>
         <Input id="endereco" value={v.endereco} onChange={(e) => setAddressFields({ endereco: e.target.value })} required maxLength={200} />
       </div>
