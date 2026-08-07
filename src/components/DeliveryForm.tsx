@@ -495,7 +495,7 @@ export function DeliveryForm({
           onChange={(e) => set("pago", e.target.checked)}
         />
       </label>
-      {(() => {
+      {tipo === "Entrega" && (() => {
         const digits = normalizeCep(v.cep);
         const missing = digits.length > 0 && digits.length < 8;
         const complete = digits.length === 8 && isValidCep(digits);
