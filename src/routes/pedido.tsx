@@ -336,7 +336,7 @@ function PedidoPage() {
           <section className="space-y-3">
             <h2 className="text-lg font-bold">Dados do pedido</h2>
             <div>
-              <Label>Como você quer receber?</Label>
+              <Label>Como você quer receber? ao cadastrar o pedido manuel ter a opcao de retirada ou entrega</Label>
               <div className="mt-1 grid grid-cols-2 gap-2">
                 <Button
                   type="button"
