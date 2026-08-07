@@ -112,6 +112,7 @@ export function DeliveryForm({
 }) {
   const [v, setV] = useState<DeliveryFormValues>(empty);
   const [forma, setForma] = useState<FormaPagamento | "">("");
+  const [tipo, setTipo] = useState<TipoEntrega>("Entrega");
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState<null | {
     kind: "invalid" | "not_found" | "network" | "out_of_area";
