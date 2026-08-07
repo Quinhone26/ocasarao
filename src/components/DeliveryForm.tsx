@@ -346,9 +346,12 @@ export function DeliveryForm({
       });
       return;
     }
-    const obs = [forma ? `Pagamento: ${forma}` : "", v.observacoes.trim()]
-      .filter(Boolean)
-      .join("\n");
+    const obsParts = [];
+    if (forma) obsParts.push(`Pagamento: ${forma}`);
+    if (tipo) obsParts.push(`Tipo: ${tipo}`);
+    if (v.observacoes.trim()) obsParts.push(v.observacoes.trim());
+    
+    const obs = obsParts.join("\n");
     onSubmit({
       ...v,
       cep: cepDigits ? formatCep(cepDigits) : "",
