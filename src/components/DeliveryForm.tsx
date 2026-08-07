@@ -44,18 +44,27 @@ export interface DeliveryFormValues {
 export const FORMAS_PAGAMENTO = ["Dinheiro", "Cartão", "Pix"] as const;
 export type FormaPagamento = (typeof FORMAS_PAGAMENTO)[number];
 
-/** Separa a linha "Pagamento: X" das observações (formato usado nos pedidos online). */
-function splitPagamento(obs: string): { forma: FormaPagamento | ""; resto: string } {
+export const TIPOS_ENTREGA = ["Entrega", "Retirada"] as const;
+export type TipoEntrega = (typeof TIPOS_ENTREGA)[number];
+
+/** Separa a linha "Pagamento: X" e "Tipo: X" das observações. */
+function splitObservacoes(obs: string): { forma: FormaPagamento | ""; tipo: TipoEntrega | ""; resto: string } {
   const lines = (obs || "").split("\n");
   let forma: FormaPagamento | "" = "";
+  let tipo: TipoEntrega | "" = "";
   const resto: string[] = [];
   for (const line of lines) {
-    const m = /^\s*pagamento:\s*(.+)$/i.exec(line);
-    const found = m ? FORMAS_PAGAMENTO.find((f) => norm(m[1]).startsWith(norm(f))) : undefined;
-    if (found && !forma) forma = found;
+    const mPag = /^\s*pagamento:\s*(.+)$/i.exec(line);
+    const mTipo = /^\s*tipo:\s*(.+)$/i.exec(line);
+    
+    const foundPag = mPag ? FORMAS_PAGAMENTO.find((f) => norm(mPag[1]).startsWith(norm(f))) : undefined;
+    const foundTipo = mTipo ? TIPOS_ENTREGA.find((t) => norm(mTipo[1]).startsWith(norm(t))) : undefined;
+
+    if (foundPag && !forma) forma = foundPag;
+    else if (foundTipo && !tipo) tipo = foundTipo;
     else resto.push(line);
   }
-  return { forma, resto: resto.join("\n").trim() };
+  return { forma, tipo, resto: resto.join("\n").trim() };
 }
 
 function addressKey(v: Pick<DeliveryFormValues, "cep" | "endereco" | "numero" | "bairro" | "cidade">): string {
