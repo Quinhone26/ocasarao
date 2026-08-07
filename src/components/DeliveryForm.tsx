@@ -674,7 +674,7 @@ export function DeliveryForm({
             </Button>
           </div>
         </div>
-      </div>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="dataHora">Data e hora</Label>
