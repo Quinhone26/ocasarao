@@ -125,7 +125,7 @@ export function DeliveryForm({
 
   useEffect(() => {
     if (initial) {
-      const { forma: formaInicial, resto } = splitPagamento(initial.observacoes ?? "");
+      const { forma: formaInicial, tipo: tipoInicial, resto } = splitObservacoes(initial.observacoes ?? "");
       const next = {
         cliente: initial.cliente,
         telefone: formatPhone(initial.telefone),
