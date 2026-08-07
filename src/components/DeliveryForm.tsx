@@ -314,7 +314,8 @@ export function DeliveryForm({
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!v.cliente.trim() || !v.endereco.trim()) return;
+    const isEntrega = tipo === "Entrega";
+    if (!v.cliente.trim() || (isEntrega && !v.endereco.trim())) return;
 
     const hasGps = v.lat != null && v.lng != null;
     const cepDigits = normalizeCep(v.cep);
