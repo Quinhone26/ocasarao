@@ -355,13 +355,17 @@ export function DeliveryForm({
     const obs = obsParts.join("\n");
     onSubmit({
       ...v,
-      cep: cepDigits ? formatCep(cepDigits) : "",
+      cep: isEntrega ? (cepDigits ? formatCep(cepDigits) : "") : "",
+      endereco: isEntrega ? v.endereco : "RETIRADA NO LOCAL",
+      numero: isEntrega ? v.numero : "",
+      bairro: isEntrega ? v.bairro : "",
+      complemento: isEntrega ? v.complemento : "",
       valor: Number(v.valor) || 0,
       observacoes: obs,
       dataHora: new Date(v.dataHora).toISOString(),
       agendadoPara: v.agendadoPara ? new Date(v.agendadoPara).toISOString() : null,
-      lat: v.lat ?? null,
-      lng: v.lng ?? null,
+      lat: isEntrega ? (v.lat ?? null) : null,
+      lng: isEntrega ? (v.lng ?? null) : null,
       status: v.status || "pendente",
     });
   };
