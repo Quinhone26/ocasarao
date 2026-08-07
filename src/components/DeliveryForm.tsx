@@ -430,7 +430,22 @@ export function DeliveryForm({
             )}
           </div>
         </div>
-        <div className="space-y-1.5">
+      <div className="space-y-1.5">
+        <Label>Tipo de pedido</Label>
+        <div className="grid grid-cols-2 gap-2">
+          {TIPOS_ENTREGA.map((t) => (
+            <Button
+              key={t}
+              type="button"
+              variant={tipo === t ? "default" : "outline"}
+              onClick={() => setTipo(t)}
+            >
+              {t}
+            </Button>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-1.5">
           <Label htmlFor="valor">Valor</Label>
           <Input
             id="valor"
