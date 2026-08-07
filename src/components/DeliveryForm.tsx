@@ -319,33 +319,34 @@ export function DeliveryForm({
 
     const hasGps = v.lat != null && v.lng != null;
     const cepDigits = normalizeCep(v.cep);
-    // CEP é obrigatório para geocoding preciso; só liberamos se já houver GPS salvo.
-    if (!hasGps && cepDigits.length === 0) {
-      toast.error("Informe o CEP ou capture a localização (GPS)");
-      setCepError({
-        kind: "invalid",
-        message: "CEP obrigatório — ou salve a localização (GPS) do destino.",
-      });
-      return;
-    }
-    if (cepDigits.length > 0 && !isValidCep(cepDigits)) {
-      toast.error("CEP inválido");
-      setCepError({
-        kind: "invalid",
-        message:
-          cepDigits.length < 8
-            ? "CEP incompleto — precisa ter 8 dígitos."
-            : "CEP inválido — verifique os números digitados.",
-      });
-      return;
-    }
-    if (v.cidade.trim() && !isAllowedCity(v.cidade)) {
-      toast.error(`Só atendemos ${ALLOWED_CITY}-${ALLOWED_UF}`);
-      setCepError({
-        kind: "out_of_area",
-        message: `Fora da área de atendimento. Só entregamos em ${ALLOWED_CITY}-${ALLOWED_UF}.`,
-      });
-      return;
+    if (isEntrega) {
+      if (!hasGps && cepDigits.length === 0) {
+        toast.error("Informe o CEP ou capture a localização (GPS)");
+        setCepError({
+          kind: "invalid",
+          message: "CEP obrigatório — ou salve a localização (GPS) do destino.",
+        });
+        return;
+      }
+      if (cepDigits.length > 0 && !isValidCep(cepDigits)) {
+        toast.error("CEP inválido");
+        setCepError({
+          kind: "invalid",
+          message:
+            cepDigits.length < 8
+              ? "CEP incompleto — precisa ter 8 dígitos."
+              : "CEP inválido — verifique os números digitados.",
+        });
+        return;
+      }
+      if (v.cidade.trim() && !isAllowedCity(v.cidade)) {
+        toast.error(`Só atendemos ${ALLOWED_CITY}-${ALLOWED_UF}`);
+        setCepError({
+          kind: "out_of_area",
+          message: `Fora da área de atendimento. Só entregamos em ${ALLOWED_CITY}-${ALLOWED_UF}.`,
+        });
+        return;
+      }
     }
     const obsParts = [];
     if (forma) obsParts.push(`Pagamento: ${forma}`);
