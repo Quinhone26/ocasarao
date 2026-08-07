@@ -148,10 +148,12 @@ export function DeliveryForm({
       };
       addressKeyWithCoords.current = addressKey(next);
       setForma(formaInicial);
+      setTipo(tipoInicial || "Entrega");
       setV(next);
     } else {
       addressKeyWithCoords.current = "";
       setForma("");
+      setTipo("Entrega");
       setV({ ...empty, dataHora: toLocalInput(new Date().toISOString()) });
     }
   }, [initial]);
