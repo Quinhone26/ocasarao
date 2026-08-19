@@ -484,6 +484,27 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-background pb-36">
+      {/* Confirmação de Entrega */}
+      <AlertDialog open={!!confirmDelivering} onOpenChange={(v) => !v && setConfirmDelivering(undefined)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar entrega?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja marcar o pedido de <strong>{confirmDelivering?.cliente}</strong> como entregue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Não</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => confirmDelivering && actualDeliver(confirmDelivering)}
+              className="bg-status-delivered text-status-delivered-foreground hover:bg-status-delivered/90"
+            >
+              Sim, entregue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <InstallPrompt />
 
       {!online && (
