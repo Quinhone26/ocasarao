@@ -397,7 +397,12 @@ function Index() {
   }, [arrivalTarget?.id]);
 
 
-  const handleDeliver = async (d: Delivery) => {
+  const handleDeliver = (d: Delivery) => {
+    setConfirmDelivering(d);
+  };
+
+  const actualDeliver = async (d: Delivery) => {
+    setConfirmDelivering(undefined);
     try {
       await update(d.id, { status: "entregue" });
       toast.success(`${d.cliente} · marcada como entregue`);
