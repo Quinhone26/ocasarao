@@ -75,6 +75,7 @@ function Index() {
   const [editingCliente, setEditingCliente] = useState<Cliente | undefined>();
   const [deletingCliente, setDeletingCliente] = useState<Cliente | undefined>();
   const [arrivalPromptId, setArrivalPromptId] = useState<string | undefined>();
+  const [confirmDelivering, setConfirmDelivering] = useState<Delivery | undefined>();
   const [notifOn, setNotifOn] = useState(false);
   useEffect(() => {
     setNotifOn(notificationsGranted());
