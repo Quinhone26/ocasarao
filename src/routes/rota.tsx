@@ -4,6 +4,7 @@ import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Route as RouteIcon, Navigation, Loader2, MapPin, CheckCircle2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useDeliveries } from "@/lib/deliveries";
 import type { Delivery } from "@/lib/deliveries";
@@ -117,6 +118,7 @@ function RotaPage() {
   } | null>(null);
   const [mapUnavailable, setMapUnavailable] = useState(false);
   const [adjustingId, setAdjustingId] = useState<string | null>(null);
+  const [confirmDelivering, setConfirmDelivering] = useState<Delivery | undefined>();
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
   const overlaysRef = useRef<Array<google.maps.Marker | google.maps.Polyline>>([]);
@@ -377,7 +379,12 @@ function RotaPage() {
   }, [origin, candidates, result, visibleStops]);
 
 
-  const markDelivered = async (d: Delivery) => {
+  const markDelivered = (d: Delivery) => {
+    setConfirmDelivering(d);
+  };
+
+  const actualMarkDelivered = async (d: Delivery) => {
+    setConfirmDelivering(undefined);
     try {
       await update(d.id, { status: "entregue" });
       toast.success(`${d.cliente} marcada como entregue`);
@@ -652,6 +659,26 @@ function RotaPage() {
           />
         );
       })()}
+      {/* Confirmação de Entrega */}
+      <AlertDialog open={!!confirmDelivering} onOpenChange={(v) => !v && setConfirmDelivering(undefined)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar entrega?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja marcar o pedido de <strong>{confirmDelivering?.cliente}</strong> como entregue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Não</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => confirmDelivering && actualMarkDelivered(confirmDelivering)}
+              className="bg-status-delivered text-status-delivered-foreground hover:bg-status-delivered/90"
+            >
+              Sim, entregue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
