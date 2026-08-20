@@ -35,6 +35,16 @@ function buildNavUrl(
 }
 
 export const Route = createFileRoute("/rota")({
+  head: () => ({
+    meta: [
+      { title: "Otimização de rota — O Casarão" },
+      { name: "description", content: "Monte a melhor rota de entregas do dia e navegue parada por parada." },
+      { property: "og:title", content: "Otimização de rota — O Casarão" },
+      { property: "og:description", content: "Monte a melhor rota de entregas do dia e navegue parada por parada." },
+      { property: "og:type", content: "website" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   beforeLoad: async () => {
     const { unlocked } = await isUnlocked();
     if (!unlocked) throw redirect({ to: "/entrar" });

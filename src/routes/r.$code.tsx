@@ -26,6 +26,7 @@ export const Route = createFileRoute("/r/$code")({
         property: "og:description",
         content: "Acompanhe seu entregador em tempo real.",
       },
+      { property: "og:type", content: "website" },
     ],
   }),
 });
