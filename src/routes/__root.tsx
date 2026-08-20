@@ -91,8 +91,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-title", content: "O Casarão" },
       { name: "twitter:title", content: "O Casarão · Gestão de entregas" },
       { name: "twitter:description", content: "Cardápio online e gestão de entregas com rastreio ao vivo." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/3c7d5fb2-a2d2-48df-bdc0-07982296e5a6" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/3c7d5fb2-a2d2-48df-bdc0-07982296e5a6" },
+      { property: "og:image", content: "https://ocasarao.lovable.app/logo-casarao.jpg" },
+      { name: "twitter:image", content: "https://ocasarao.lovable.app/logo-casarao.jpg" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
