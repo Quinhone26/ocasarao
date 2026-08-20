@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /rota
+Disallow: /cardapio
+Disallow: /entrar
+Disallow: /r/

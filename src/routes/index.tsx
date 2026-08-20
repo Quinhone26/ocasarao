@@ -27,6 +27,16 @@ import { useServerFn } from "@tanstack/react-start";
 import { geocodeAddress as geocodeAddressServerFn } from "@/lib/routes.functions";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Painel de entregas — O Casarão" },
+      { name: "description", content: "Painel interno para cadastrar, acompanhar e concluir as entregas do dia." },
+      { property: "og:title", content: "Painel de entregas — O Casarão" },
+      { property: "og:description", content: "Painel interno para cadastrar, acompanhar e concluir as entregas do dia." },
+      { property: "og:type", content: "website" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   beforeLoad: async () => {
     const { unlocked } = await isUnlocked();
     if (!unlocked) throw redirect({ to: "/entrar" });
