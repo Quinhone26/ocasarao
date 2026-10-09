@@ -1,5 +1,5 @@
 # Correção do cardápio
-- [ ] Adicionar e validar backup/restauração de clientes e produtos com fotos na área protegida.
+- [x] Adicionar e validar backup/restauração de clientes e produtos com fotos na área protegida.
 - [x] Corrigir incompatibilidades de tipos após ativação do Cloud e verificar compilação; páginas públicas sem erros de execução.
 - [x] Corrigir tratamento de erros e permitir nova tentativa nas duas telas.
 - [x] Validar erro e nova tentativa no pedido público; recuperação coberta por quatro testes aprovados.
