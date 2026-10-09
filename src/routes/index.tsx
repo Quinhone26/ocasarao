@@ -17,6 +17,7 @@ import { useDriverBroadcast } from "@/lib/use-driver-broadcast";
 import { useClientes, clienteKey, upsertClienteFromDelivery, updateStoredCliente, removeStoredCliente, type Cliente } from "@/lib/clientes";
 import { cn, toDayKey } from "@/lib/utils";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { BackupControls } from "@/components/BackupControls";
 import { printComanda } from "@/lib/print-comanda";
 import { useCompanySettings, DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/company-settings";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
@@ -870,10 +871,11 @@ function Index() {
 
       {/* Configurações da empresa */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Configurações da empresa</DialogTitle>
           </DialogHeader>
+          <BackupControls />
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label htmlFor="company-nome">Nome da empresa</Label>

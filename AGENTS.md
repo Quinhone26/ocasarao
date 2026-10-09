@@ -15,3 +15,4 @@
 - Public order submission recalculates prices from active products and atomically saves the order and customer; never trust client totals.
 - Product images use a private Cloud bucket with signed administrator uploads and a public endpoint limited to active product references, because public buckets are disabled.
 - Delivery and customer synchronization uses mounted-screen polling through the password-protected server boundary; browser realtime cannot authorize this cookie-based account model.
+- Backups use a versioned ZIP manifest with embedded product images and password-gated server functions; restoration inserts missing primary keys only to preserve current registrations and make retries safe.
