@@ -5,6 +5,7 @@
 - [ ] Validar leitura e edição com dados reais (depende da configuração das tabelas e migração de dados).
 - [ ] Configurar tabelas e migrar dados para o novo Cloud (banco anterior indisponível; Cloud ativado sem tabelas).
 - [ ] Migrar todos os dados acessíveis para Cloud sem expor clientes e entregas.
+- [ ] Recuperar registros do banco anterior (conexão HTTPS indisponível; nenhum arquivo de dados enviado).
 - [ ] Adaptar cadastros, cardápio, imagens e rastreio à proteção do Cloud.
 - [ ] Validar pedido online e gestão com leitura dos registros gravados.
 - [x] Aplicar atualização obrigatória de segurança.
