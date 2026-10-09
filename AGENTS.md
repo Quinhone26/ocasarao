@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Product reads share `fetchProdutos`, which rejects query failures and bounds request duration; both menu screens use the same recovery path rather than treating failures as an empty menu.

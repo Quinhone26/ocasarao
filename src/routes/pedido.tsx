@@ -46,7 +46,7 @@ const TAXA_ENTREGA = 8;
 
 
 function PedidoPage() {
-  const { items: produtos, loading, error } = useProdutos(true);
+  const { items: produtos, loading, error, refresh } = useProdutos(true);
   const [company] = useCompanySettings();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [step, setStep] = useState<"menu" | "dados">("menu");
@@ -276,9 +276,12 @@ function PedidoPage() {
               </div>
             )}
             {!loading && error && (
-              <p className="py-10 text-center text-sm text-destructive">
-                Não consegui carregar o cardápio agora.
-              </p>
+              <div role="alert" className="py-10 text-center space-y-3">
+                <p className="text-sm text-destructive">{error}</p>
+                <Button variant="outline" onClick={() => void refresh()}>
+                  Tentar novamente
+                </Button>
+              </div>
             )}
             {!loading && !error && produtos.length === 0 && (
               <p className="py-10 text-center text-sm text-muted-foreground">
