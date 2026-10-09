@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Contract of the existing app, not a declaration that Cloud has been migrated.
 // Keep the generated Cloud types untouched until its tables are provisioned.
@@ -60,4 +61,7 @@ type AppSchema = {
 };
 
 // Uses the same managed connection and its security policies; no extra client.
-export const appDatabase = () => supabase.schema<"public", AppSchema>("public");
+export const appDatabase = () => {
+  const connection = supabase as unknown as SupabaseClient<{ public: AppSchema }>;
+  return connection.schema("public");
+};
