@@ -42,6 +42,7 @@ export const Route = createFileRoute("/rota")({
       { property: "og:title", content: "Otimização de rota — O Casarão" },
       { property: "og:description", content: "Monte a melhor rota de entregas do dia e navegue parada por parada." },
       { property: "og:type", content: "website" },
+      { name: 'twitter:card', content: 'summary' },
       { name: "robots", content: "noindex" },
     ],
   }),

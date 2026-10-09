@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { useSession } from '@tanstack/react-start/server';
+import { gateSessionConfig, type GateSession } from './gate.server';
 
 const stopSchema = z.object({
   id: z.string(),
@@ -289,6 +291,8 @@ async function geocodeOSM(
 export const optimizeRoute = createServerFn({ method: "POST" })
   .inputValidator((d) => inputSchema.parse(d))
   .handler(async ({ data }) => {
+    const session = await useSession<GateSession>(gateSessionConfig());
+    if (session.data.unlocked !== true) throw new Error('Entre com a senha da loja para calcular rotas.');
     const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
     const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
     if (!LOVABLE_API_KEY || !GOOGLE_MAPS_API_KEY) {
@@ -527,6 +531,8 @@ export const geocodeAddress = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    const session = await useSession<GateSession>(gateSessionConfig());
+    if (session.data.unlocked !== true) throw new Error('Entre com a senha da loja para consultar endereços.');
     const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
     const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
     if (!LOVABLE_API_KEY || !GOOGLE_MAPS_API_KEY) {

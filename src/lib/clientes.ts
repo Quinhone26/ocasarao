@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { appDatabase } from "@/lib/database-contract";
 import type { Delivery } from "@/lib/deliveries";
 
@@ -118,7 +117,7 @@ function writeCache(list: StoredCliente[]) {
   }
 }
 
-let memoryStore: StoredCliente[] = readCache();
+let memoryStore: StoredCliente[] = [];
 const subscribers = new Set<() => void>();
 let realtimeStarted = false;
 
@@ -149,26 +148,7 @@ async function loadFromSupabase() {
   setStore((data as ClienteRow[]).map(fromRow));
 }
 
-function startRealtime() {
-  if (realtimeStarted) return;
-  realtimeStarted = true;
-  loadFromSupabase();
-  supabase
-    .channel("clientes-changes")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "clientes" },
-      (payload) => {
-        if (payload.eventType === "DELETE" && payload.old) {
-          removeLocal((payload.old as ClienteRow).key);
-        } else if (payload.new) {
-          upsertLocal(fromRow(payload.new as ClienteRow));
-        }
-      },
-    )
-    .subscribe();
-}
-
+// Sync is scoped to mounted administrative screens.
 // ---------- API pública ----------
 
 export async function upsertClienteFromDelivery(d: {
@@ -202,7 +182,7 @@ export async function upsertClienteFromDelivery(d: {
   };
   upsertLocal(merged);
   const { error } = await appDatabase().from("clientes").upsert(toRow(merged));
-  if (error) console.error("[clientes] upsert error", error);
+  if (error) throw new Error(error.message);
 }
 
 export async function updateStoredCliente(prevKey: string, updated: Cliente) {
@@ -230,13 +210,13 @@ export async function updateStoredCliente(prevKey: string, updated: Cliente) {
     if (delErr) console.error("[clientes] rename delete error", delErr);
   }
   const { error } = await appDatabase().from("clientes").upsert(toRow(next));
-  if (error) console.error("[clientes] update error", error);
+  if (error) throw new Error(error.message);
 }
 
 export async function removeStoredCliente(key: string) {
   removeLocal(key);
   const { error } = await appDatabase().from("clientes").delete().eq("key", key);
-  if (error) console.error("[clientes] delete error", error);
+  if (error) throw new Error(error.message);
 }
 
 // ---------- Agregação ----------
@@ -312,12 +292,14 @@ export function useClientes(items: Delivery[]): Cliente[] {
   const [stored, setStored] = useState<StoredCliente[]>(() => memoryStore);
 
   useEffect(() => {
-    startRealtime();
+    void loadFromSupabase();
+    const timer = setInterval(() => void loadFromSupabase(),10000);
     const cb = () => setStored(memoryStore);
     subscribers.add(cb);
     cb();
     return () => {
       subscribers.delete(cb);
+      clearInterval(timer);
     };
   }, []);
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { appDatabase } from "@/lib/database-contract";
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Produto {
   id: string;
@@ -53,9 +54,10 @@ export async function fetchProdutos(somenteAtivos: boolean): Promise<Produto[]> 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
-    let q = appDatabase().from("produtos").select("*").order("ordem").order("nome");
-    if (somenteAtivos) q = q.eq("ativo", true);
-    const { data, error } = await q.abortSignal(controller.signal);
+    const result = somenteAtivos
+      ? await supabase.from('produtos').select('*').eq('ativo',true).order('ordem').order('nome').abortSignal(controller.signal)
+      : await appDatabase().from('produtos').select('*').order('ordem').order('nome').abortSignal(controller.signal);
+    const { data, error } = result;
     if (error) throw error;
     return ((data ?? []) as ProdutoRow[]).map(fromRow);
   } finally {

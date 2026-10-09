@@ -27,6 +27,7 @@ export const Route = createFileRoute("/r/$code")({
         content: "Acompanhe seu entregador em tempo real.",
       },
       { property: "og:type", content: "website" },
+      { name: 'twitter:card', content: 'summary' },
     ],
   }),
 });
@@ -79,7 +80,7 @@ function TrackPage() {
     (async () => {
       const [t, loc] = await Promise.all([
         fetchPublicTrack(code),
-        fetchDriverLocation(),
+        fetchDriverLocation(code),
       ]);
       if (cancelled) return;
       if (!t) {
@@ -90,10 +91,15 @@ function TrackPage() {
       }
       setLoading(false);
     })();
-    const unsub = subscribeDriverLocation((loc) => setDriver(loc));
+    const unsub = subscribeDriverLocation((loc) => setDriver(loc), code);
+    const timer = setInterval(async()=>{
+      const t = await fetchPublicTrack(code);
+      if (!cancelled && t) setTrack(t);
+    },10000);
     return () => {
       cancelled = true;
       unsub();
+      clearInterval(timer);
     };
   }, [code]);
 

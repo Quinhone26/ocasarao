@@ -5,8 +5,9 @@ const query = vi.hoisted(() => ({
   select: vi.fn(), order: vi.fn(), eq: vi.fn(), abortSignal: vi.fn(),
 }));
 vi.mock("@/integrations/supabase/client", () => ({
-  supabase: { schema: vi.fn(() => ({ from: vi.fn(() => query) })) },
+  supabase: { from: vi.fn(() => query) },
 }));
+vi.mock('@/lib/database-contract',()=>({appDatabase:()=>({from:()=>query})}));
 
 import { fetchProdutos, useProdutos } from "./produtos";
 

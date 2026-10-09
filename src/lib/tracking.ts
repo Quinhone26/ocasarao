@@ -6,7 +6,7 @@ const DRIVER_ID = "default";
 // Gera um código curto (6 chars, base32 sem ambíguos) para o link público.
 export function generateTrackCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const bytes = new Uint8Array(6);
+  const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
   let out = "";
   for (const b of bytes) out += alphabet[b % alphabet.length];
@@ -52,37 +52,25 @@ export async function publishDriverLocation(pos: {
   if (error) console.warn("[tracking] publish:", error.message);
 }
 
-export async function fetchDriverLocation(): Promise<DriverLocation | null> {
-  const { data, error } = await appDatabase()
-    .from("driver_locations")
-    .select("lat,lng,accuracy,updated_at")
-    .eq("id", DRIVER_ID)
-    .maybeSingle();
+export async function fetchDriverLocation(code: string): Promise<DriverLocation | null> {
+  const { data: rows, error } = await appDatabase().rpc('get_track_driver',{_code:code});
+  const data = rows?.[0];
   if (error || !data) return null;
   return data as DriverLocation;
 }
 
 export function subscribeDriverLocation(
   onChange: (loc: DriverLocation) => void,
+  code: string,
 ): () => void {
-  const channel = supabase
-    .channel("driver-loc")
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "driver_locations",
-        filter: `id=eq.${DRIVER_ID}`,
-      },
-      (payload) => {
-        const row = payload.new as DriverLocation | null;
-        if (row) onChange(row);
-      },
-    )
-    .subscribe();
+  let stopped = false;
+  const timer = setInterval(async()=>{
+    const loc = await fetchDriverLocation(code);
+    if (!stopped && loc) onChange(loc);
+  },10000);
   return () => {
-    supabase.removeChannel(channel);
+    stopped = true;
+    clearInterval(timer);
   };
 }
 
