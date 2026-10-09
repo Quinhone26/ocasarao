@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { z } from "zod";
-import { supabase, type DeliveryRow } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
+import { appDatabase, type DeliveryRow } from "@/lib/database-contract";
 import { formatCep, isValidCep, normalizeCep } from "@/lib/cep";
 import { generateTrackCode } from "@/lib/tracking";
 import { newId } from "@/lib/utils";
@@ -186,7 +187,7 @@ export function useDeliveries(options?: {
   );
 
   const refresh = useCallback(async () => {
-    const { data, error } = await supabase
+    const { data, error } = await appDatabase()
       .from("deliveries")
       .select("*")
       .order("criado_em", { ascending: false });
@@ -205,7 +206,7 @@ export function useDeliveries(options?: {
       await Promise.all(
         missing.map(async (d) => {
           const code = generateTrackCode();
-          const { error: uErr } = await supabase
+          const { error: uErr } = await appDatabase()
             .from("deliveries")
             .update({ track_code: code })
             .eq("id", d.id)
@@ -279,13 +280,13 @@ export function useDeliveries(options?: {
       localOpsRef.current.add(d.id);
       seenIdsRef.current.add(d.id);
       applyItems((prev) => [d, ...prev]);
-      const { error } = await supabase.from("deliveries").insert(toRow(d));
+      const { error } = await appDatabase().from("deliveries").insert(toRow(d));
       if (error) {
         // Fallback: coluna track_code ainda não migrada — salva sem ela.
         if (/track_code/i.test(error.message) || error.code === "PGRST204") {
           const { trackCode: _tc, ...rest } = d;
           void _tc;
-          const { error: e2 } = await supabase.from("deliveries").insert(toRow(rest));
+          const { error: e2 } = await appDatabase().from("deliveries").insert(toRow(rest));
           if (!e2) return { ...d, trackCode: null };
           console.error("[deliveries] create fallback error", e2);
         }
@@ -332,7 +333,7 @@ export function useDeliveries(options?: {
         before = prev.find((x) => x.id === id);
         return prev.map((d) => (d.id === id ? { ...d, ...normalized } : d));
       });
-      const { error } = await supabase
+      const { error } = await appDatabase()
         .from("deliveries")
         .update(toRow(normalized))
         .eq("id", id);
@@ -357,7 +358,7 @@ export function useDeliveries(options?: {
         before = prev.find((x) => x.id === id);
         return prev.filter((d) => d.id !== id);
       });
-      const { error } = await supabase.from("deliveries").delete().eq("id", id);
+      const { error } = await appDatabase().from("deliveries").delete().eq("id", id);
       if (error) {
         localOpsRef.current.delete(id);
         if (before) {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { appDatabase } from "@/lib/database-contract";
 import type { Delivery } from "@/lib/deliveries";
 
 export interface Cliente {
@@ -140,7 +141,7 @@ function removeLocal(key: string) {
 }
 
 async function loadFromSupabase() {
-  const { data, error } = await supabase.from("clientes").select("*");
+  const { data, error } = await appDatabase().from("clientes").select("*");
   if (error) {
     console.error("[clientes] load error", error);
     return;
@@ -200,7 +201,7 @@ export async function upsertClienteFromDelivery(d: {
     lng: d.lng ?? prev?.lng ?? null,
   };
   upsertLocal(merged);
-  const { error } = await supabase.from("clientes").upsert(toRow(merged));
+  const { error } = await appDatabase().from("clientes").upsert(toRow(merged));
   if (error) console.error("[clientes] upsert error", error);
 }
 
@@ -222,19 +223,19 @@ export async function updateStoredCliente(prevKey: string, updated: Cliente) {
   if (nextKey !== prevKey) removeLocal(prevKey);
   upsertLocal(next);
   if (nextKey !== prevKey) {
-    const { error: delErr } = await supabase
+    const { error: delErr } = await appDatabase()
       .from("clientes")
       .delete()
       .eq("key", prevKey);
     if (delErr) console.error("[clientes] rename delete error", delErr);
   }
-  const { error } = await supabase.from("clientes").upsert(toRow(next));
+  const { error } = await appDatabase().from("clientes").upsert(toRow(next));
   if (error) console.error("[clientes] update error", error);
 }
 
 export async function removeStoredCliente(key: string) {
   removeLocal(key);
-  const { error } = await supabase.from("clientes").delete().eq("key", key);
+  const { error } = await appDatabase().from("clientes").delete().eq("key", key);
   if (error) console.error("[clientes] delete error", error);
 }
 

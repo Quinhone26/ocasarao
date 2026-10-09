@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { appDatabase } from "@/lib/database-contract";
 
 export type CompanySettings = {
   nome: string;
@@ -57,7 +57,7 @@ function writeCache(s: CompanySettings): void {
 }
 
 async function fetchFromDb(): Promise<CompanySettings | null> {
-  const { data, error } = await supabase
+  const { data, error } = await appDatabase()
     .from("company_settings")
     .select("*")
     .eq("id", ROW_ID)
@@ -97,7 +97,7 @@ async function saveToDb(s: CompanySettings): Promise<void> {
     lng_origem: s.lngOrigem,
     atualizado_em: now,
   };
-  const { error } = await supabase
+  const { error } = await appDatabase()
     .from("company_settings")
     .upsert(full, { onConflict: "id" });
   if (!error) return;
@@ -107,7 +107,7 @@ async function saveToDb(s: CompanySettings): Promise<void> {
     /whatsapp_template|endereco_origem|lat_origem|lng_origem/i.test(msg) ||
     error.code === "PGRST204";
   if (isMissingCol) {
-    const { error: e2 } = await supabase
+    const { error: e2 } = await appDatabase()
       .from("company_settings")
       .upsert(
         { id: ROW_ID, nome: s.nome, saudacao: s.saudacao, atualizado_em: now },
