@@ -170,6 +170,7 @@ export function useDeliveries(options?: {
   const [items, setItems] = useState<Delivery[]>([]);
   const localOpsRef = useRef<Set<string>>(new Set());
   const seenIdsRef = useRef<Set<string>>(new Set());
+  const loadedRef = useRef(false);
   const onRemoteInsertRef = useRef(options?.onRemoteInsert);
   onRemoteInsertRef.current = options?.onRemoteInsert;
 
@@ -196,9 +197,10 @@ export function useDeliveries(options?: {
     }
     const list = (data as DeliveryRow[]).map(fromRow);
     for (const d of list) {
-      if (seenIdsRef.current.size > 0 && !seenIdsRef.current.has(d.id) && !localOpsRef.current.has(d.id)) onRemoteInsertRef.current?.(d);
+      if (loadedRef.current && !seenIdsRef.current.has(d.id) && !localOpsRef.current.has(d.id)) onRemoteInsertRef.current?.(d);
     }
     for (const d of list) seenIdsRef.current.add(d.id);
+    loadedRef.current = true;
     applyItems(() => list);
 
     // Backfill de track_code em entregas antigas — permite gerar link de

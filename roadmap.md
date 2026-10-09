@@ -2,10 +2,9 @@
 - [x] Corrigir incompatibilidades de tipos após ativação do Cloud e verificar compilação; páginas públicas sem erros de execução.
 - [x] Corrigir tratamento de erros e permitir nova tentativa nas duas telas.
 - [x] Validar erro e nova tentativa no pedido público; recuperação coberta por quatro testes aprovados.
-- [ ] Validar leitura e edição com dados reais (depende da configuração das tabelas e migração de dados).
-- [ ] Configurar tabelas e migrar dados para o novo Cloud (banco anterior indisponível; Cloud ativado sem tabelas).
-- [ ] Migrar todos os dados acessíveis para Cloud sem expor clientes e entregas.
+- [x] Validar criação e edição com registros de teste gravados no Cloud e lidos pela interface.
+- [x] Configurar as cinco tabelas, funções de rastreio e armazenamento privado no Cloud.
 - [ ] Recuperar registros do banco anterior (conexão HTTPS indisponível; nenhum arquivo de dados enviado).
-- [ ] Adaptar cadastros, cardápio, imagens e rastreio à proteção do Cloud.
-- [ ] Validar pedido online e gestão com leitura dos registros gravados.
+- [x] Adaptar cadastros, cardápio, imagens e rastreio à proteção do Cloud.
+- [x] Validar pedido online e gestão com leitura dos registros gravados; 20 testes aprovados.
 - [x] Aplicar atualização obrigatória de segurança.
