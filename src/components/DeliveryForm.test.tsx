@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DeliveryForm } from "./DeliveryForm";
+vi.mock('@/lib/database-contract',()=>({appDatabase:()=>({from:()=>({select:async()=>({data:[],error:null})})})}));
 
 // Sonner mexe com portais/animações — mocka para não poluir os testes.
 vi.mock("sonner", () => ({
@@ -36,24 +37,24 @@ describe("DeliveryForm — consulta de CEP", () => {
         () =>
           new Response(
             JSON.stringify({
-              cep: "01001-000",
+              cep: "87501-100",
               logradouro: "Praça da Sé",
               bairro: "Sé",
-              localidade: "São Paulo",
-              uf: "SP",
+              localidade: "Umuarama",
+              uf: "PR",
             }),
             { status: 200 },
           ),
       ),
     );
     setup();
-    await typeCep("01001000");
+    await typeCep("87501100");
 
     await waitFor(() => {
       expect(screen.getByLabelText(/Endereço/i)).toHaveValue("Praça da Sé");
     });
     expect(screen.getByLabelText(/Bairro/i)).toHaveValue("Sé");
-    expect(screen.getByLabelText(/Cidade/i)).toHaveValue("São Paulo/SP");
+    expect(screen.getByLabelText(/Cidade/i)).toHaveValue("Umuarama/PR");
     expect(screen.queryByRole("button", { name: /Tentar novamente/i })).not.toBeInTheDocument();
   });
 
@@ -80,7 +81,7 @@ describe("DeliveryForm — consulta de CEP", () => {
       vi.fn(() => new Response(JSON.stringify({ erro: true }), { status: 200 })),
     );
     setup();
-    await typeCep("00000000");
+    await typeCep("87501222");
 
     await screen.findByText(/CEP não encontrado/i);
     expect(screen.getByRole("button", { name: /Tentar novamente/i })).toBeInTheDocument();
@@ -93,18 +94,18 @@ describe("DeliveryForm — consulta de CEP", () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            cep: "12345-678",
+            cep: "87501-333",
             logradouro: "Rua Teste",
             bairro: "Centro",
-            localidade: "Testópolis",
-            uf: "TS",
+            localidade: "Umuarama",
+            uf: "PR",
           }),
           { status: 200 },
         ),
       );
     vi.stubGlobal("fetch", fetchMock);
     setup();
-    await typeCep("12345678");
+    await typeCep("87501333");
 
     await screen.findByText(/Sem conexão para consultar o CEP/i);
     const retry = screen.getByRole("button", { name: /Tentar novamente/i });

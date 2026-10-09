@@ -4,7 +4,7 @@ export type GateSession = { unlocked?: boolean };
 
 export function gateSessionConfig() {
   return {
-    password: process.env.SESSION_SECRET!,
+    password: process.env['SESSION_SECRET'] ?? (() => { throw new Error('Proteção de acesso não configurada.'); })(),
     name: "casarao-gate",
     maxAge: 60 * 60 * 24 * 30, // 30 dias
     cookie: {

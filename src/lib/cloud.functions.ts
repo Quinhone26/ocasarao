@@ -13,14 +13,14 @@ export const cloudQuery = createServerFn({ method: 'POST' })
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
     const db = supabaseAdmin.from(data.table);
     let query = data.operation === 'select' ? db.select('*') : data.operation === 'delete' ? db.delete() : data.operation === 'insert' ? db.insert(data.values as never) : data.operation === 'upsert' ? db.upsert(data.values as never) : db.update(data.values as never);
-    for (const f of data.filters) query = f.kind === 'eq' ? query.eq(f.column,f.value) : query.is(f.column,null);
+    for (const f of data.filters) query = f.kind === 'eq' && f.value !== null ? query.eq(f.column,f.value) : query.is(f.column,null);
     if (data.operation === 'select') {
-      const rows: Record<string, unknown>[] = [];
+      const rows: Record<string, string | number | boolean | null>[] = [];
       const pk = data.table === 'clientes' ? 'key' : 'id';
       for (let offset=0; ; offset+=1000) {
         const { data: batch, error } = await query.order(pk).range(offset,offset+999).abortSignal(AbortSignal.timeout(15000));
         if (error) return { data: null, error: { message:error.message, code:error.code } };
-        rows.push(...(batch ?? []));
+        rows.push(...(batch ?? []) as Record<string, string | number | boolean | null>[]);
         if (!batch || batch.length < 1000) break;
       }
       return { data: rows, error: null };
