@@ -7,10 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { describeError } from "@/lib/errors";
-import { appDatabase } from "@/lib/database-contract";
+import { submitOnlineOrder } from '@/lib/cloud.functions';
 import { useProdutos, cartTotal, cartToText, type CartItem, type Produto } from "@/lib/produtos";
 import { formatBRL } from "@/lib/deliveries";
-import { upsertClienteFromDelivery } from "@/lib/clientes";
 import { formatCep, isValidCep, lookupCep, isAllowedCity, ALLOWED_CITY, ALLOWED_UF } from "@/lib/cep";
 import { formatPhone, normalizeBrPhone } from "@/lib/masks";
 import { generateTrackCode, buildTrackUrl } from "@/lib/tracking";
@@ -52,6 +51,7 @@ function PedidoPage() {
   const [step, setStep] = useState<"menu" | "dados">("menu");
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState<{ track: string | null } | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
 
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");

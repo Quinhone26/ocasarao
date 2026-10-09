@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { appDatabase } from "@/lib/database-contract";
+import { supabase } from '@/integrations/supabase/client';
 
 export type CompanySettings = {
   nome: string;
@@ -57,7 +58,7 @@ function writeCache(s: CompanySettings): void {
 }
 
 async function fetchFromDb(): Promise<CompanySettings | null> {
-  const { data, error } = await appDatabase()
+  const { data, error } = await supabase
     .from("company_settings")
     .select("*")
     .eq("id", ROW_ID)
@@ -123,10 +124,11 @@ async function saveToDb(s: CompanySettings): Promise<void> {
 }
 
 export function useCompanySettings(): [CompanySettings, (s: CompanySettings) => Promise<void>] {
-  const [s, setS] = useState<CompanySettings>(() => getCompanySettings());
+  const [s, setS] = useState<CompanySettings>(DEFAULT_COMPANY_SETTINGS);
 
   useEffect(() => {
     let cancelled = false;
+    setS(getCompanySettings());
     (async () => {
       const remote = await fetchFromDb();
       if (cancelled || !remote) return;

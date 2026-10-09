@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { protectedTable } from './cloud-query';
 
 // Contract of the existing app, not a declaration that Cloud has been migrated.
 // Keep the generated Cloud types untouched until its tables are provisioned.
@@ -57,11 +58,15 @@ type AppSchema = {
     driver_locations: Table<DriverRow>;
   };
   Views: Record<never, never>;
-  Functions: { get_track: { Args: { _code: string }; Returns: TrackRow[] } };
+  Functions: { get_track: { Args: { _code: string }; Returns: TrackRow[] }; get_track_driver: { Args: { _code: string }; Returns: DriverRow[] } };
 };
 
 // Uses the same managed connection and its security policies; no extra client.
 export const appDatabase = () => {
   const connection = supabase as unknown as SupabaseClient<{ public: AppSchema }>;
-  return connection.schema("public");
+  const schema = connection.schema("public");
+  return {
+    from: (table: keyof AppSchema['Tables']) => protectedTable(table),
+    rpc: schema.rpc.bind(schema),
+  };
 };
