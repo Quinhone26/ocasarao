@@ -53,7 +53,7 @@ const EMPTY = {
 };
 
 function CardapioAdmin() {
-  const { items, loading, error, create, update, remove } = useProdutos(false);
+  const { items, loading, error, refresh, create, update, remove } = useProdutos(false);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Produto | undefined>();
   const [form, setForm] = useState({ ...EMPTY });
@@ -162,9 +162,12 @@ function CardapioAdmin() {
           </div>
         )}
         {error && (
-          <p className="text-sm text-destructive">
-            Não consegui carregar os produtos. Rode a migração `docs/pending-migrations/cardapio.sql`.
-          </p>
+          <div role="alert" className="space-y-3 py-4">
+            <p className="text-sm text-destructive">{error}</p>
+            <Button variant="outline" onClick={() => void refresh()} disabled={loading}>
+              Tentar novamente
+            </Button>
+          </div>
         )}
         {!loading && !error && items.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">

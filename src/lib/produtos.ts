@@ -50,14 +50,31 @@ function toRow(p: Partial<Produto>) {
 
 /** Lista produtos. `somenteAtivos` para a página pública do cardápio. */
 export async function fetchProdutos(somenteAtivos: boolean): Promise<Produto[]> {
-  let q = supabase.from("produtos").select("*").order("ordem").order("nome");
-  if (somenteAtivos) q = q.eq("ativo", true);
-  const { data, error } = await q;
-  if (error) {
-    console.warn("[produtos] load:", error.message);
-    return [];
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  try {
+    let q = supabase.from("produtos").select("*").order("ordem").order("nome");
+    if (somenteAtivos) q = q.eq("ativo", true);
+    const { data, error } = await q.abortSignal(controller.signal);
+    if (error) throw error;
+    return ((data ?? []) as ProdutoRow[]).map(fromRow);
+  } finally {
+    clearTimeout(timeout);
   }
-  return (data as ProdutoRow[]).map(fromRow);
+}
+
+function produtosErrorMessage(error: unknown): string {
+  const e = error && typeof error === "object" ? error as { code?: string; message?: string } : {};
+  if (e.code === "42P01" || e.code === "PGRST205") {
+    return "O cardápio ainda não foi configurado. Entre em contato com o responsável pela loja.";
+  }
+  if (e.code === "42501" || /permission denied|row-level security/i.test(e.message ?? "")) {
+    return "Não foi possível acessar os produtos. O responsável pela loja precisa verificar as permissões de acesso.";
+  }
+  if (/fetch|network|abort|timeout|connection/i.test(e.message ?? "")) {
+    return "Não foi possível conectar ao cardápio. Verifique sua internet e tente novamente. Se continuar, avise o responsável pela loja.";
+  }
+  return "Não foi possível carregar os produtos agora. Tente novamente.";
 }
 
 export function useProdutos(somenteAtivos = false) {
@@ -67,17 +84,17 @@ export function useProdutos(somenteAtivos = false) {
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    const { data, error: e } = await (somenteAtivos
-      ? supabase.from("produtos").select("*").eq("ativo", true).order("ordem").order("nome")
-      : supabase.from("produtos").select("*").order("ordem").order("nome"));
-    if (e) {
-      setError(e.message);
-      setItems([]);
-    } else {
+    setError(null);
+    try {
+      setItems(await fetchProdutos(somenteAtivos));
       setError(null);
-      setItems((data as ProdutoRow[]).map(fromRow));
+    } catch (e) {
+      console.warn("[produtos] load:", e);
+      setError(produtosErrorMessage(e));
+      setItems([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [somenteAtivos]);
 
   useEffect(() => {
