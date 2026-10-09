@@ -34,6 +34,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "Painel de entregas — O Casarão" },
       { property: "og:description", content: "Painel interno para cadastrar, acompanhar e concluir as entregas do dia." },
       { property: "og:type", content: "website" },
+      { name: 'twitter:card', content: 'summary' },
       { name: "robots", content: "noindex" },
     ],
   }),

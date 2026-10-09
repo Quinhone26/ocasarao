@@ -50,7 +50,7 @@ function PedidoPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [step, setStep] = useState<"menu" | "dados">("menu");
   const [sending, setSending] = useState(false);
-  const [done, setDone] = useState<{ track: string | null } | null>(null);
+  const [done, setDone] = useState<{ track: string | null; total: number } | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
 
   const [nome, setNome] = useState("");
@@ -147,7 +147,7 @@ function PedidoPage() {
       const id = orderId ?? newId();
       setOrderId(id);
       const result = await submitOnlineOrder({data:{id,nome:nome.trim(),telefone,cep,endereco,numero,bairro,complemento,tipoEntrega,pagamento:pagamento as "Dinheiro" | "Pix" | "Cartão na entrega",troco,obs,cart:cart.map(i=>({id:i.produto.id,qtd:i.qtd}))}});
-      setDone({track:result.track});
+      setDone({track:result.track,total:result.total});
     } catch (error) {
       toast.error("Não consegui enviar seu pedido. Tente novamente.", {description:describeError(error)});
     } finally {
@@ -167,12 +167,12 @@ function PedidoPage() {
           <CheckCircle2 className="mx-auto w-14 h-14 text-status-delivered" />
           <h1 className="mt-4 text-2xl font-bold">Pedido enviado!</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Recebemos seu pedido de {formatBRL(total)}. Em instantes ele sai para entrega.
+            Recebemos seu pedido de {formatBRL(done.total)}. Em instantes ele sai para entrega.
           </p>
           {pagamento === "Pix" && total > 0 && (
             <div className="mt-5 text-left">
               <PixQrCode
-                amount={total}
+                 amount={done.total}
                 merchantName={company.nome}
                 customerName={nome.trim()}
                 trackCode={done.track}

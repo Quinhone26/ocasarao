@@ -75,7 +75,7 @@ describe("DeliveryForm — consulta de CEP", () => {
     expect(screen.queryByText(/Sem conexão/i)).not.toBeInTheDocument();
   });
 
-  it("CEP não encontrado: mostra mensagem específica e botão Tentar novamente", async () => {
+  it("CEP não encontrado: informa erro e não oferece repetir um CEP inexistente", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(() => new Response(JSON.stringify({ erro: true }), { status: 200 })),
@@ -84,7 +84,7 @@ describe("DeliveryForm — consulta de CEP", () => {
     await typeCep("87501222");
 
     await screen.findByText(/CEP não encontrado/i);
-    expect(screen.getByRole("button", { name: /Tentar novamente/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Tentar novamente/i })).not.toBeInTheDocument();
   });
 
   it("Sem conexão: mostra mensagem e Tentar novamente refaz a consulta com sucesso", async () => {
