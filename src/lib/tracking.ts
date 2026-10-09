@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { appDatabase } from "@/lib/database-contract";
 
 const DRIVER_ID = "default";
 
@@ -36,7 +37,7 @@ export async function publishDriverLocation(pos: {
   heading?: number | null;
   speed?: number | null;
 }): Promise<void> {
-  const { error } = await supabase.from("driver_locations").upsert(
+  const { error } = await appDatabase().from("driver_locations").upsert(
     {
       id: DRIVER_ID,
       lat: pos.lat,
@@ -52,7 +53,7 @@ export async function publishDriverLocation(pos: {
 }
 
 export async function fetchDriverLocation(): Promise<DriverLocation | null> {
-  const { data, error } = await supabase
+  const { data, error } = await appDatabase()
     .from("driver_locations")
     .select("lat,lng,accuracy,updated_at")
     .eq("id", DRIVER_ID)
@@ -101,7 +102,7 @@ export type PublicTrack = {
 };
 
 export async function fetchPublicTrack(code: string): Promise<PublicTrack | null> {
-  const { data, error } = await supabase.rpc("get_track", { _code: code });
+  const { data, error } = await appDatabase().rpc("get_track", { _code: code });
   if (error) {
     console.warn("[tracking] get_track:", error.message);
     return null;

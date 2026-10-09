@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { appDatabase } from "@/lib/database-contract";
 
 export interface Produto {
   id: string;
@@ -37,7 +37,7 @@ function fromRow(r: ProdutoRow): Produto {
 }
 
 function toRow(p: Partial<Produto>) {
-  const r: Record<string, unknown> = {};
+  const r: Partial<ProdutoRow> = {};
   if (p.nome !== undefined) r.nome = p.nome;
   if (p.descricao !== undefined) r.descricao = p.descricao;
   if (p.categoria !== undefined) r.categoria = p.categoria;
@@ -53,7 +53,7 @@ export async function fetchProdutos(somenteAtivos: boolean): Promise<Produto[]> 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
-    let q = supabase.from("produtos").select("*").order("ordem").order("nome");
+    let q = appDatabase().from("produtos").select("*").order("ordem").order("nome");
     if (somenteAtivos) q = q.eq("ativo", true);
     const { data, error } = await q.abortSignal(controller.signal);
     if (error) throw error;
@@ -103,7 +103,7 @@ export function useProdutos(somenteAtivos = false) {
 
   const create = useCallback(
     async (p: Omit<Produto, "id">) => {
-      const { error: e } = await supabase.from("produtos").insert(toRow(p));
+      const { error: e } = await appDatabase().from("produtos").insert(toRow(p));
       if (e) throw new Error(e.message);
       await refresh();
     },
@@ -112,7 +112,7 @@ export function useProdutos(somenteAtivos = false) {
 
   const update = useCallback(
     async (id: string, patch: Partial<Produto>) => {
-      const { error: e } = await supabase.from("produtos").update(toRow(patch)).eq("id", id);
+      const { error: e } = await appDatabase().from("produtos").update(toRow(patch)).eq("id", id);
       if (e) throw new Error(e.message);
       await refresh();
     },
@@ -121,7 +121,7 @@ export function useProdutos(somenteAtivos = false) {
 
   const remove = useCallback(
     async (id: string) => {
-      const { error: e } = await supabase.from("produtos").delete().eq("id", id);
+      const { error: e } = await appDatabase().from("produtos").delete().eq("id", id);
       if (e) throw new Error(e.message);
       await refresh();
     },

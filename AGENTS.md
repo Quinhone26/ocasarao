@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Product reads share `fetchProdutos`, which rejects query failures and bounds request duration; both menu screens use the same recovery path rather than treating failures as an empty menu.
+- While the newly connected Cloud schema awaits migration, the existing app schema contract lives in `database-contract.ts` and uses the managed client's typed schema view; never edit generated types or treat this contract as proof of provisioned tables.

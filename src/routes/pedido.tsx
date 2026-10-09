@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { describeError } from "@/lib/errors";
-import { supabase } from "@/integrations/supabase/client";
+import { appDatabase } from "@/lib/database-contract";
 import { useProdutos, cartTotal, cartToText, type CartItem, type Produto } from "@/lib/produtos";
 import { formatBRL } from "@/lib/deliveries";
 import { upsertClienteFromDelivery } from "@/lib/clientes";
@@ -153,7 +153,7 @@ function PedidoPage() {
       .join(" · ");
 
     setSending(true);
-    const { error: insertError } = await supabase.from("deliveries").insert({
+    const { error: insertError } = await appDatabase().from("deliveries").insert({
       id: newId(),
       cliente: nome.trim(),
       telefone: telefone.trim(),
