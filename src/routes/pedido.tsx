@@ -8,11 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { describeError } from "@/lib/errors";
 import { submitOnlineOrder } from '@/lib/cloud.functions';
-import { useProdutos, cartTotal, cartToText, type CartItem, type Produto } from "@/lib/produtos";
+import { useProdutos, cartTotal, type CartItem, type Produto } from "@/lib/produtos";
 import { formatBRL } from "@/lib/deliveries";
 import { formatCep, isValidCep, lookupCep, isAllowedCity, ALLOWED_CITY, ALLOWED_UF } from "@/lib/cep";
 import { formatPhone, normalizeBrPhone } from "@/lib/masks";
-import { generateTrackCode, buildTrackUrl } from "@/lib/tracking";
+import { buildTrackUrl } from "@/lib/tracking";
 import { useCompanySettings } from "@/lib/company-settings";
 import { newId } from "@/lib/utils";
 import { PixQrCode } from "@/components/PixQrCode";
@@ -142,69 +142,17 @@ function PedidoPage() {
     if (total <= 0) return toast.error("Valor do pedido inválido.");
 
 
-    const trackCode = generateTrackCode();
-    const detalhes = [
-      `PEDIDO ONLINE: ${cartToText(cart)}`,
-      entrega ? `Entrega (taxa ${formatBRL(taxaEntrega)})` : "RETIRADA NO LOCAL",
-      `Pagamento: ${pagamento}${pagamento === "Dinheiro" && troco.trim() ? ` (troco para ${troco.trim()})` : ""}`,
-      obs.trim() ? `Obs: ${obs.trim()}` : "",
-    ]
-      .filter(Boolean)
-      .join(" · ");
-
     setSending(true);
-    const { error: insertError } = await appDatabase().from("deliveries").insert({
-      id: newId(),
-      cliente: nome.trim(),
-      telefone: telefone.trim(),
-      cep: entrega ? cep.trim() : "",
-      endereco: entrega ? endereco.trim() : "RETIRADA NO LOCAL",
-      numero: entrega ? numero.trim() : "",
-      bairro: entrega ? bairro.trim() : "",
-      cidade: ALLOWED_CITY,
-      complemento: entrega ? complemento.trim() : "",
-      observacoes: detalhes,
-      valor: total,
-      data_hora: new Date().toISOString(),
-      agendado_para: null,
-      lat: null,
-      lng: null,
-      status: "pendente",
-      pago: false,
-      criado_em: new Date().toISOString(),
-      track_code: trackCode,
-    });
-
-    setSending(false);
-
-    if (insertError) {
-      console.error("[pedido] insert", insertError);
-      toast.error("Não consegui enviar seu pedido. Tente novamente.", {
-        description: describeError(insertError),
-      });
-      return;
+    try {
+      const id = orderId ?? newId();
+      setOrderId(id);
+      const result = await submitOnlineOrder({data:{id,nome:nome.trim(),telefone,cep,endereco,numero,bairro,complemento,tipoEntrega,pagamento:pagamento as "Dinheiro" | "Pix" | "Cartão na entrega",troco,obs,cart:cart.map(i=>({id:i.produto.id,qtd:i.qtd}))}});
+      setDone({track:result.track});
+    } catch (error) {
+      toast.error("Não consegui enviar seu pedido. Tente novamente.", {description:describeError(error)});
+    } finally {
+      setSending(false);
     }
-
-    // Salva/atualiza o cadastro do cliente igual ao pedido manual.
-    if (entrega) {
-      await upsertClienteFromDelivery({
-        cliente: nome.trim(),
-        telefone: telefone.trim(),
-        cep: cep.trim(),
-        endereco: endereco.trim(),
-        numero: numero.trim(),
-        bairro: bairro.trim(),
-        cidade: ALLOWED_CITY,
-        complemento: complemento.trim(),
-      });
-    } else {
-      await upsertClienteFromDelivery({
-        cliente: nome.trim(),
-        telefone: telefone.trim(),
-      });
-    }
-
-    setDone({ track: trackCode });
   }
 
   useEffect(() => {

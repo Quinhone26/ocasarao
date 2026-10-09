@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
 import { appDatabase, type DeliveryRow } from "@/lib/database-contract";
 import { formatCep, isValidCep, normalizeCep } from "@/lib/cep";
 import { generateTrackCode } from "@/lib/tracking";
@@ -168,7 +167,7 @@ export function useDeliveries(options?: {
   /** Chamado quando um pedido criado em outro dispositivo/página chega via realtime. */
   onRemoteInsert?: (d: Delivery) => void;
 }) {
-  const [items, setItems] = useState<Delivery[]>(() => readCache());
+  const [items, setItems] = useState<Delivery[]>([]);
   const localOpsRef = useRef<Set<string>>(new Set());
   const seenIdsRef = useRef<Set<string>>(new Set());
   const onRemoteInsertRef = useRef(options?.onRemoteInsert);
@@ -196,6 +195,9 @@ export function useDeliveries(options?: {
       return;
     }
     const list = (data as DeliveryRow[]).map(fromRow);
+    for (const d of list) {
+      if (seenIdsRef.current.size > 0 && !seenIdsRef.current.has(d.id) && !localOpsRef.current.has(d.id)) onRemoteInsertRef.current?.(d);
+    }
     for (const d of list) seenIdsRef.current.add(d.id);
     applyItems(() => list);
 
@@ -227,44 +229,12 @@ export function useDeliveries(options?: {
 
   useEffect(() => {
     refresh();
-    const channel = supabase
-      .channel("deliveries-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "deliveries" },
-        (payload) => {
-          const eventType = payload.eventType;
-          // Pular eco de operação local que já aplicamos otimisticamente.
-          const rowId =
-            (payload.new as DeliveryRow | null)?.id ??
-            (payload.old as DeliveryRow | null)?.id;
-          if (rowId && localOpsRef.current.has(rowId)) {
-            localOpsRef.current.delete(rowId);
-            return;
-          }
-          if (eventType === "INSERT" && payload.new) {
-            const d = fromRow(payload.new as DeliveryRow);
-            const isNew = !seenIdsRef.current.has(d.id);
-            seenIdsRef.current.add(d.id);
-            applyItems((prev) =>
-              prev.some((x) => x.id === d.id) ? prev : [d, ...prev],
-            );
-            if (isNew) onRemoteInsertRef.current?.(d);
-          } else if (eventType === "UPDATE" && payload.new) {
-
-            const d = fromRow(payload.new as DeliveryRow);
-            applyItems((prev) =>
-              prev.map((x) => (x.id === d.id ? d : x)),
-            );
-          } else if (eventType === "DELETE" && payload.old) {
-            const id = (payload.old as DeliveryRow).id;
-            applyItems((prev) => prev.filter((x) => x.id !== id));
-          }
-        },
-      )
-      .subscribe();
+    const timer = setInterval(() => void refresh(), 10000);
+    const onFocus = () => void refresh();
+    window.addEventListener('focus',onFocus);
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(timer);
+      window.removeEventListener('focus',onFocus);
     };
   }, [refresh, applyItems]);
 
